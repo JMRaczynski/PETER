@@ -1,0 +1,103 @@
+Brak predykcji ratingów mniejszych niż 3!!!
+
+182 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; słabe GT
+701 - wyjaśnienie bez sensu; predykcja ratingu średnia; gt bez sensu; - trudno mówić o spójności
+1387 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+2195 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; słabe GT
+2197 - wyjaśnienie bez sensu; predykcja ratingu dość dobra; GT raczej słabe;
+2829 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie sprzeczne wobec GT, GT dobre
+3194 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; słabe GT
+3503 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; słabe GT
+4293 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe (GT rating 1.0); dobre GT
+5894 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu dobra, wyjaśnienie sprzeczne wobec GT, GT słabe
+6299 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+6535 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT słabe
+6603 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre, choć ubogie; GT dobre
+7355 - rating spójny z wyjaśnieniem (pozytywny); predykcje słabe, GT dobre
+8036 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+9685 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre, choć ubogie; GT dobre
+10826 - rating spójny z wyjaśnieniem (pozytywny); predykcje średnie; GT niespójne (ocena 3, wyjaśnienie pozytywne)
+10924 - rating spójny z wyjaśnieniem (pozytywny); predykcje słabe; GT złe
+11133 - rating spójny z wyjaśnieniem (pozytywny); predykcje słabe; GT złe (problem datasetu!!!)
+11281 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+11349 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT złe
+12866 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+12928 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dość dobre
+13117 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+13245 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie słabe; GT dobre
+13915 - rating dość spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie złe; GT złe
+14578 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu dobra, wyjaśnienie słabe; GT złe
+15645 - rating spójny z wyjaśnieniem (pozytywny); predykcje dobre; GT dobre
+16246 - brak spójności; predykcje słabe; GT dobre
+16275 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie słabe; GT średnie (???)
+17048 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie słabe; GT złe
+17524 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT niespójne
+17890 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+18767 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+19699 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT słabe
+20956 - wyjaśnienie bez sensu; predykcja ratingu ok; GT ok
+20976 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+21741 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT niespójne
+22330 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT średnie
+22364 - rating niezbyt spójny z wyjaśnieniem; predykcje słabe; GT ok
+22916 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+23411 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT ok (problem wypowiedzi typu "I..." i w GT, i w wyjaśnieniu)
+24127 - wyjaśnienie bez sensu; predykcja ratingu ok; GT ok
+24227 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+25163 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+27220 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+27649 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+27954 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT dobre
+28248 - predykcje złe i niespójne; GT niespójne
+28253 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie złe; GT słabe
+28669 - rating dość spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienia zła; GT słabe
+32045 - wyjaśnienie bez sensu; predykcja ratingu ok; GT ok
+32150 - wyjaśnienie słabe jak GT; predykcja ratingu ok; GT słabe (?)
+32513 - rating spójny z wyjaśnieniem (pozytywny); predykcja ok; GT średnie
+33738 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+33759 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok (problemy językowe); GT dobre
+35937 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT dobre
+36375 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienia zła; GT dobre
+36658 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienia średnia; GT dobre
+36675 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT dobre
+36739 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienia średnia; GT dobre
+39271 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienia średnia (językowo); GT dobre
+39623 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+41480 - predykcja ratingu ok; wyjaśnienie złe, bo GT złe
+41708 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+41868 - rating spójny z wyjaśnieniem (pozytywny); predykcje lepsze niż GT; GT złe
+42869 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT ok
+44239 - rating dość spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+44866 - rating z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+47054 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok, wyjaśnienie ubogie; GT dobre
+47413 - rating niespójny z wyjaśnieniem; predykcja wyjaśnienia ok, ratingu zła; GT złe
+47922 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok, wyjaśnienie złe jak GT; GT złe
+48080 - rating spójny z wyjaśnieniem (pozytywny); predykcje ubogie jak GT; GT ubogie
+49475 - rating spójny z wyjaśnieniem (pozytywny); predykcje ubogie; GT ok
+50399 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre (ucięte zdanie)
+52721 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok, ale ubogie jak GT
+52945 - rating ok, wyjaśnienie złe jak GT
+53719 - rating dosyć spójny z wyjaśnieniem (pozytywny); ubogie wyjaśnienie identyczne jak GT
+55159 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT dobre
+56214 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+56324 - rating niespójny z wyjaśnieniem; predykcja ratingu zła; GT uciete
+57195 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok (nieco ubogie); GT dobre
+57910 - predykcja ratingu ok; wyjaśnienie bez sensu jak GT
+58782 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok, choć niespójne ze słabym GT
+59474 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe
+59503 - rating spójny z wyjaśnieniem (pozytywny); predykcje lepsze niż GT; GT niespójne
+59621 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok (nieco ubogie); GT dobre
+59999 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT tragiczne
+60188 - rating spójny z wyjaśnieniem (pozytywny); predykcje złe; GT ok
+60977 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok (nieco ubogie); GT dobre
+61837 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT niespójne
+63153 - rating spójny z wyjaśnieniem (pozytywny) <powtórka>; predykcje ok; GT słabe
+63618 - rating dość spójny z wyjaśnieniem (pozytywny); predykcje ok; GT średnie
+65074 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+66936 - rating spójny z wyjaśnieniem (pozytywny) <powtórka 2>; predykcje ok; GT słabe
+67202 - predykcja ratingu dość dobra; wyjaśnienie UNK; GT dobre
+68074 - wyjaśnienie bez sensu (jak GT); predykcja ratingu ok
+69453 - rating dość spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+69475 - rating dość spójny z wyjaśnieniem (pozytywny); predykcje ok; GT słabe;
+70052 - rating spójny z wyjaśnieniem (pozytywny); predykcje ok; GT dobre
+70844 - rating spójny z wyjaśnieniem (pozytywny); predykcja ratingu ok; wyjaśnienie średnie; GT dobre

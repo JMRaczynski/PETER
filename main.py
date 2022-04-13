@@ -94,10 +94,25 @@ train_data = Batchify(corpus.train, word2idx, args.words, args.batch_size, shuff
 val_data = Batchify(corpus.valid, word2idx, args.words, args.batch_size)
 test_data = Batchify(corpus.test, word2idx, args.words, args.batch_size)
 
+
+# l = torch.zeros((3, 5))
+# for i, x in enumerate((corpus.train, corpus.valid, corpus.test)):
+#     ratings = torch.Tensor([example["rating"] for example in x]).type(torch.IntTensor)
+#     l[i] = ratings.bincount()[1:]
+# print(*l.sum(dim=0).tolist())
+# print(test_data.next_batch())
+# print([ids2tokens(ids[1:], word2idx, idx2word) for ids in test_data.seq.tolist()][12:16])
+# exit(0)
+# batch = train_data.next_batch()
+# print(batch[3].shape)
+# for explanation in batch[3]:
+#     print([idx2word[idx] for idx in explanation])
+
+
+
 ###############################################################################
 # Build the model
 ###############################################################################
-
 if args.use_feature:
     src_len = 2 + train_data.feature.size(1)  # [u, i, f]
 else:
@@ -265,7 +280,7 @@ def generate(data):
     print(now_time() + 'BLEU-1 {:7.4f}'.format(BLEU1))
     BLEU4 = bleu_score(tokens_test, tokens_predict, n_gram=4, smooth=False)
     print(now_time() + 'BLEU-4 {:7.4f}'.format(BLEU4))
-    USR, USN = unique_sentence_percent(tokens_predict)
+    USR, USN = unique_sentence_percent( tokens_predict)
     print(now_time() + 'USR {:7.4f} | USN {:7}'.format(USR, USN))
     feature_batch = feature_detect(tokens_predict, feature_set)
     DIV = feature_diversity(feature_batch)  # time-consuming
@@ -282,8 +297,8 @@ def generate(data):
     for (k, v) in ROUGE.items():
         print(now_time() + '{} {:7.4f}'.format(k, v))
     text_out = ''
-    for (real, ctx, fake) in zip(text_test, tokens_context, text_predict):
-        text_out += '{}\n{}\n{}\n\n'.format(real, ctx, fake)
+    for (real, real_rating, ctx, fake, fake_rating) in zip(text_test, data.rating.tolist(), tokens_context, text_predict, rating_predict):
+        text_out += '{} {}\n{}\n{} {}\n\n'.format(real, real_rating, ctx, fake, fake_rating)
     return text_out
 
 
