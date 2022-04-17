@@ -1,3 +1,5 @@
 1, 2, 3, 4, 5 gwiazdek
 
 5987 9387 19357 39162 105330
+
+W zbiorze treningowym są wszystkie itemy i wszyscy userzy, w walidacyjnym i testowym 10231/22919 i 10216/22919 itemów, 13782/38764 i 13798/38764 userów
