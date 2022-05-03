@@ -1,0 +1,5 @@
+1, 2, 3, 4, 5 gwiazdek
+
+25605 33124 66233 120468 196353
+
+W zbiorze treningowym są wszystkie itemy i wszyscy userzy, w walidacyjnym i testowym 7089/7360 i 7108/7360 itemów, 7168/7506 i 7146/7506 userów
