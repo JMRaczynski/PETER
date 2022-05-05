@@ -179,10 +179,10 @@ def train(data):
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         optimizer.zero_grad()
-        log_word_prob, log_context_dis, rating_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+        log_word_prob, log_context_dis, rating_p, rating_p_from_explanation, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
         context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
         c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
-        r_loss = rating_criterion(rating_p, rating)
+        r_loss = rating_criterion(rating_p, rating) + rating_criterion(rating_p_from_explanation, rating_p)
         t_loss = text_criterion(log_word_prob.view(-1, ntokens), seq[1:].reshape((-1,)))
         loss = args.text_reg * t_loss + args.context_reg * c_loss + args.rating_reg * r_loss
         loss.backward()
@@ -230,10 +230,10 @@ def evaluate(data):
                 text = torch.cat([feature, seq[:-1]], 0)  # (src_len + tgt_len - 2, batch_size)
             else:
                 text = seq[:-1]  # (src_len + tgt_len - 2, batch_size)
-            log_word_prob, log_context_dis, rating_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            log_word_prob, log_context_dis, rating_p, rating_p_from_explanation, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
             context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
             c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
-            r_loss = rating_criterion(rating_p, rating)
+            r_loss = rating_criterion(rating_p, rating) + rating_criterion(rating_p_from_explanation, rating_p)
             t_loss = text_criterion(log_word_prob.view(-1, ntokens), seq[1:].reshape((-1,)))
 
             context_loss += batch_size * c_loss.item()
@@ -267,12 +267,12 @@ def generate(data):
             for idx in range(args.words):
                 # produce a word at each step
                 if idx == 0:
-                    log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+                    log_word_prob, log_context_dis, rating_p, rating_p_from_explanation, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
                     rating_predict.extend(rating_p.tolist())
                     context = predict(log_context_dis, topk=args.words)  # (batch_size, words)
                     context_predict.extend(context.tolist())
                 else:
-                    log_word_prob, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
+                    log_word_prob, _, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
                 word_prob = log_word_prob.exp()  # (batch_size, ntoken)
                 word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
                 text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
@@ -318,6 +318,7 @@ def generate(data):
 
 
 # Loop over epochs.
+
 # with open(model_path, 'rb') as f:
 #     model = torch.load(f).to(device)
 

@@ -223,7 +223,8 @@ class PETER(nn.Module):
         self.item_embeddings = nn.Embedding(nitem, emsize)
         self.word_embeddings = nn.Embedding(ntoken, emsize)
         self.hidden2token = nn.Linear(emsize, ntoken)
-        self.recommender = MLP(emsize)
+        self.original_recommender = MLP(emsize)
+        self.additional_recommender = MLP(emsize)
 
         self.ui_len = 2
         self.src_len = src_len
@@ -250,8 +251,10 @@ class PETER(nn.Module):
         return log_context_dis
 
     def predict_rating(self, hidden):
-        rating = self.recommender(hidden[0])  # (batch_size,)
-        return rating
+        rating = self.original_recommender(hidden[0])  # (batch_size,)
+        hidden_explanation, _ = hidden[self.src_len:].max(0)
+        explanation_rating = self.additional_recommender(hidden_explanation)
+        return rating, explanation_rating
 
     def predict_seq(self, hidden):
         word_prob = self.hidden2token(hidden[self.src_len:])  # (tgt_len, batch_size, ntoken)
@@ -292,10 +295,11 @@ class PETER(nn.Module):
         src = src * math.sqrt(self.emsize)
         src = self.pos_encoder(src)
         hidden, attns = self.transformer_encoder(src, attn_mask, key_padding_mask)  # (total_len, batch_size, emsize) vs. (nlayers, batch_size, total_len_tgt, total_len_src)
+
         if rating_prediction:
-            rating = self.predict_rating(hidden)  # (batch_size,)
+            rating, explanation_rating = self.predict_rating(hidden)  # (batch_size,)
         else:
-            rating = None
+            rating, explanation_rating = None, None
         if context_prediction:
             log_context_dis = self.predict_context(hidden)  # (batch_size, ntoken)
         else:
@@ -304,4 +308,4 @@ class PETER(nn.Module):
             log_word_prob = self.predict_seq(hidden)  # (tgt_len, batch_size, ntoken)
         else:
             log_word_prob = self.generate_token(hidden)  # (batch_size, ntoken)
-        return log_word_prob, log_context_dis, rating, attns
+        return log_word_prob, log_context_dis, rating, explanation_rating, attns

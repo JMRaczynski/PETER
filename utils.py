@@ -195,8 +195,13 @@ class DataLoader:
     def load_data(self, data_path, index_dir):
         data = []
         reviews = pickle.load(open(data_path, 'rb'))
+        # c= 0
         for review in reviews:
             (fea, adj, tem, sco) = review['template']
+            # print(review)
+            # if c > 5:
+            #     exit(0)
+            # c+= 1
             data.append({'user': self.user_dict.entity2idx[review['user']],
                          'item': self.item_dict.entity2idx[review['item']],
                          'rating': review['rating'],
