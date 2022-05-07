@@ -223,7 +223,7 @@ class PETER(nn.Module):
         self.item_embeddings = nn.Embedding(nitem, emsize)
         self.word_embeddings = nn.Embedding(ntoken, emsize)
         self.hidden2token = nn.Linear(emsize, ntoken)
-        self.recommender = MLP(emsize)
+        self.recommender = MLP(emsize * 2)
 
         self.ui_len = 2
         self.src_len = src_len
@@ -250,7 +250,7 @@ class PETER(nn.Module):
         return log_context_dis
 
     def predict_rating(self, hidden):
-        rating = self.recommender(hidden[0])  # (batch_size,)
+        rating = self.recommender(torch.cat((hidden[0], hidden[self.src_len:].max(0)[0]), dim=-1))  # (batch_size,)
         return rating
 
     def predict_seq(self, hidden):
