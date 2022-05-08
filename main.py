@@ -1,5 +1,7 @@
 import os
 import math
+from typing import Tuple
+
 import torch
 import argparse
 import torch.nn as nn
@@ -246,6 +248,38 @@ def evaluate(data):
     return context_loss / total_sample, text_loss / total_sample, rating_loss / total_sample
 
 
+def generate_greedy(model, model_input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
+    user, item, text = model_input
+    for idx in range(args.words):  # produce a word at each step
+        log_word_prob, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
+        word_prob = log_word_prob.exp()  # (batch_size, ntoken)
+        word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
+        text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
+    return text
+
+
+def generate_with_beam_search(model, model_input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], beam_size=5):  # all words represented as indices
+    user, item, text = model_input
+    repeated_user, repeated_item = user.repeat_interleave(beam_size), item.repeat_interleave(beam_size)
+    batch_size = text.shape[-1]
+    log_word_prob, _, _, _ = model(user, item, text, False, False, False)
+    beam_log_probas, top_candidate_words = torch.topk(log_word_prob, beam_size, dim=1)
+    sentences = torch.cat([text.repeat_interleave(beam_size, dim=1), top_candidate_words.reshape(1, -1)], 0)
+    beam_log_probas = beam_log_probas.unsqueeze(-1)
+    for _ in range(args.words - 1):
+        log_word_prob, _, _, _ = model(repeated_user, repeated_item, sentences, False, False, False)  # (batch_size * beam_size, ntoken)
+        top_candidate_log_probas, top_candidate_words = torch.topk(log_word_prob, beam_size, dim=1, sorted=False)  # (batch_size * beam_size, beam_size)
+        beam_log_probas = beam_log_probas + top_candidate_log_probas.reshape(batch_size, beam_size, beam_size)
+        beam_log_probas, probas_idx = torch.topk(beam_log_probas.reshape(batch_size, -1), beam_size, dim=1, sorted=False)
+        beam_log_probas = beam_log_probas.unsqueeze(-1)
+        new_words = torch.gather(top_candidate_words.reshape(batch_size, -1), 1, probas_idx)
+        sentences_idx = (probas_idx / beam_size).type(torch.int64)  # calculating sentence idx basing on candidate word idx
+        sentences = sentences.T.reshape(batch_size, beam_size, -1)[torch.arange(0, batch_size).reshape(-1, 1), sentences_idx, :]
+        sentences = torch.cat([sentences.reshape(batch_size * beam_size, -1).T, new_words.reshape(1, -1)], 0)
+    best_sentences_idx = beam_log_probas.squeeze().argmax(1)
+    return sentences.T.reshape(batch_size, beam_size, -1)[range(batch_size), best_sentences_idx, :].T
+
+
 def generate(data):
     # Turn on evaluation mode which disables dropout.
     model.eval()
@@ -264,18 +298,10 @@ def generate(data):
             else:
                 text = bos  # (src_len - 1, batch_size)
             start_idx = text.size(0)
-            for idx in range(args.words):
-                # produce a word at each step
-                if idx == 0:
-                    log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
-                    rating_predict.extend(rating_p.tolist())
-                    context = predict(log_context_dis, topk=args.words)  # (batch_size, words)
-                    context_predict.extend(context.tolist())
-                else:
-                    log_word_prob, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
-                word_prob = log_word_prob.exp()  # (batch_size, ntoken)
-                word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
-                text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
+            log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            rating_predict += rating_p.tolist()
+            context_predict += predict(log_context_dis, topk=args.words).tolist()  # (batch_size, words)
+            text = generate_with_beam_search(model, (user, item, text))
             ids = text[start_idx:].t().tolist()  # (batch_size, seq_len)
             idss_predict.extend(ids)
 
@@ -318,8 +344,6 @@ def generate(data):
 
 
 # Loop over epochs.
-# with open(model_path, 'rb') as f:
-#     model = torch.load(f).to(device)
 
 best_val_loss = float('inf')
 endure_count = 0
