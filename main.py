@@ -131,9 +131,9 @@ test_data = Batchify(corpus.test, word2idx, args.words, args.batch_size)
 # Build the model
 ###############################################################################
 if args.use_feature:
-    src_len = 2 + train_data.feature.size(1)  # [u, i, f]
+    src_len = 3 + train_data.feature.size(1)  # [u, i, f]
 else:
-    src_len = 2  # [u, i]
+    src_len = 3  # [u, i]
 tgt_len = args.words + 1  # added <bos> or <eos>
 ntokens = len(corpus.word_dict)
 nuser = len(corpus.user_dict)
@@ -273,7 +273,7 @@ def generate_with_beam_search(model, model_input: Tuple[torch.Tensor, torch.Tens
         beam_log_probas, probas_idx = torch.topk(beam_log_probas.reshape(batch_size, -1), beam_size, dim=1, sorted=False)
         beam_log_probas = beam_log_probas.unsqueeze(-1)
         new_words = torch.gather(top_candidate_words.reshape(batch_size, -1), 1, probas_idx)
-        sentences_idx = (probas_idx / beam_size).type(torch.int64)  # calculating sentence idx basing on candidate word idx
+        sentences_idx = (probas_idx / beam_size).long()  # calculating sentence idx basing on candidate word idx
         sentences = sentences.T.reshape(batch_size, beam_size, -1)[torch.arange(0, batch_size).reshape(-1, 1), sentences_idx, :]
         sentences = torch.cat([sentences.reshape(batch_size * beam_size, -1).T, new_words.reshape(1, -1)], 0)
     best_sentences_idx = beam_log_probas.squeeze().argmax(1)
@@ -301,7 +301,7 @@ def generate(data):
             log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
             rating_predict += rating_p.tolist()
             context_predict += predict(log_context_dis, topk=args.words).tolist()  # (batch_size, words)
-            text = generate_with_beam_search(model, (user, item, text))
+            text = generate_greedy(model, (user, item, text))
             ids = text[start_idx:].t().tolist()  # (batch_size, seq_len)
             idss_predict.extend(ids)
 
