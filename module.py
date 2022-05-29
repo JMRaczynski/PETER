@@ -265,7 +265,7 @@ class PETER(nn.Module):
         log_word_prob = func.log_softmax(word_prob, dim=-1)
         return log_word_prob
 
-    def forward(self, user, item, text, seq_prediction=True, context_prediction=True, rating_prediction=True):
+    def forward(self, user, item, text, gt_rating, seq_prediction=True, context_prediction=True, rating_prediction=True):
         '''
         :param user: (batch_size,), torch.int64
         :param item: (batch_size,), torch.int64
@@ -296,7 +296,10 @@ class PETER(nn.Module):
         src = self.pos_encoder(src)
         hidden, attns = self.transformer_encoder(src, attn_mask, key_padding_mask)  # (total_len, batch_size, emsize) vs. (nlayers, batch_size, total_len_tgt, total_len_src)
         rating = self.predict_rating(hidden)  # (batch_size,)
-        rating_embedded = self.rating_embeddings(torch.clamp(rating - 1, 0, 4).round().long().to(device).unsqueeze(0))
+        if self.training:
+            rating_embedded = self.rating_embeddings((gt_rating - 1).long().to(device).unsqueeze(0))
+        else:
+            rating_embedded = self.rating_embeddings(torch.clamp(rating - 1, 0, 4).round().long().to(device).unsqueeze(0))
         new_src = torch.cat([u_src, i_src, rating_embedded, w_src], 0)
         new_src = new_src * math.sqrt(self.emsize)
         new_src = self.pos_encoder(new_src)

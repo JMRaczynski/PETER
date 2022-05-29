@@ -181,7 +181,7 @@ def train(data):
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         optimizer.zero_grad()
-        log_word_prob, log_context_dis, rating_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+        log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, rating)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
         context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
         c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
         r_loss = rating_criterion(rating_p, rating)
@@ -232,7 +232,7 @@ def evaluate(data):
                 text = torch.cat([feature, seq[:-1]], 0)  # (src_len + tgt_len - 2, batch_size)
             else:
                 text = seq[:-1]  # (src_len + tgt_len - 2, batch_size)
-            log_word_prob, log_context_dis, rating_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, None)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
             context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
             c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
             r_loss = rating_criterion(rating_p, rating)
@@ -251,7 +251,7 @@ def evaluate(data):
 def generate_greedy(model, model_input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
     user, item, text = model_input
     for idx in range(args.words):  # produce a word at each step
-        log_word_prob, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
+        log_word_prob, _, _, _ = model(user, item, text, None, False, False, False)  # (batch_size, ntoken)
         word_prob = log_word_prob.exp()  # (batch_size, ntoken)
         word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
         text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
@@ -262,12 +262,12 @@ def generate_with_beam_search(model, model_input: Tuple[torch.Tensor, torch.Tens
     user, item, text = model_input
     repeated_user, repeated_item = user.repeat_interleave(beam_size), item.repeat_interleave(beam_size)
     batch_size = text.shape[-1]
-    log_word_prob, _, _, _ = model(user, item, text, False, False, False)
+    log_word_prob, _, _, _ = model(user, item, text, None, False, False, False)
     beam_log_probas, top_candidate_words = torch.topk(log_word_prob, beam_size, dim=1)
     sentences = torch.cat([text.repeat_interleave(beam_size, dim=1), top_candidate_words.reshape(1, -1)], 0)
     beam_log_probas = beam_log_probas.unsqueeze(-1)
     for _ in range(args.words - 1):
-        log_word_prob, _, _, _ = model(repeated_user, repeated_item, sentences, False, False, False)  # (batch_size * beam_size, ntoken)
+        log_word_prob, _, _, _ = model(repeated_user, repeated_item, sentences, None, False, False, False)  # (batch_size * beam_size, ntoken)
         top_candidate_log_probas, top_candidate_words = torch.topk(log_word_prob, beam_size, dim=1, sorted=False)  # (batch_size * beam_size, beam_size)
         beam_log_probas = beam_log_probas + top_candidate_log_probas.reshape(batch_size, beam_size, beam_size)
         beam_log_probas, probas_idx = torch.topk(beam_log_probas.reshape(batch_size, -1), beam_size, dim=1, sorted=False)
@@ -298,7 +298,7 @@ def generate(data):
             else:
                 text = bos  # (src_len - 1, batch_size)
             start_idx = text.size(0)
-            log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            log_word_prob, log_context_dis, rating_p, _ = model(user, item, text, None, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
             rating_predict += rating_p.tolist()
             context_predict += predict(log_context_dis, topk=args.words).tolist()  # (batch_size, words)
             text = generate_greedy(model, (user, item, text))
