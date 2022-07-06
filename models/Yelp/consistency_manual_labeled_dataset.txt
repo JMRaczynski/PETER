@@ -148,3 +148,111 @@
 166861	we had a family holiday dinner here back in holidays of december and i really 4.0	0
 459417	check in via phone before hand and it keeps you posted through text message 5.0	1
 281081	this place has become that spot for my partner and i 5.0	1
+2579	it was filling and delicious 4.2060651779174805	1
+26573	and made great recommendations 5.0	1
+429963	they have a great drink selection 4.425735950469971	1
+242723	the tuna is a little too sweet for my liking 3.3284225463867188	1
+239597	but would love to go back again and try something else 4.0	1
+503293	sooo good ! 5.0	1
+117131	the service was great 4.373015403747559	1
+319507	i visited this place on a saturday afternoon and it was a great experience 4.36116886138916	1
+261645	with interesting topping combinations and generous portion sizes 5.0	1
+423373	very delicious food 5.0	1
+249385	sometimes the service is not the best ( all restaurants have their off days ) 5.0	1
+53415	i have been here a few times and have never had a bad experience here 4.313478469848633	1
+233351	the portions are huge 4.1487956047058105	1
+128573	huge portions great prices 4.0	1
+81453	everyone here is super friendly and helpful . 5.0	1
+62021	i make better burgers at home 2.0	1
+275339	i would definitely come back . 3.288478374481201	0
+9225	the kitchen is super slow 2.0	1
+124149	myers park housewives are n't keeping me away from <unk> 's and it 's excellent 4.0	1
+438107	the food court is a great place to grab a bite to eat 3.814166784286499	1
+183059	i have never had a bad meal here 4.447449684143066	1
+147409	decent all you can eat sushi place . 4.0	1
+188041	which sucks because that 's going to be 200 more out of my pocket 4.0	0
+25763	the french toast is amazing 4.096567153930664	1
+94739	they have a great craft beer selection 4.001593589782715	1
+84571	my favorite was the <unk> . 3.645171880722046	1
+361357	but it does have a nice fireplace and outdoor feeling inside 3.0	1
+195151	i visited this place on a saturday afternoon 4.392607688903809	0
+375805	asked to purchase the creamy tomatillo dressing as an extra for a burrito 2.0	0
+155725	food was n't great 2.0	1
+498203	the vegetables were fresh and the vegetables were fresh 2.4275498390197754	0
+453235	i 'm not a big fan of the customer service 4.177935600280762	0
+32205	never been to this location and hoping quality is just as good as their sahara 5.0	0
+172053	essentially just a big piece of fat on my plate 2.0	1
+347157	so the rep said a tech will release the cable trap on tuesday 1.0	0
+314449	and that they will then make a hand-crafted mixed drink based on that preference 4.0	0
+48483	i had the filet mignon with mashed potatoes and asparagus 4.211402416229248	1
+456781	always checking on me 5.0	0
+97735	the bar is always clean and the sushi is always fresh 3.616006374359131	1
+473497	they did warn me and tell me they have only made a couple times so 3.0	1
+434785	the food is made fresh and tastes delicious for fast food friendly budgets 5.0	1
+141623	i 'm not a big fan of the <unk> 3.6499886512756348	0
+251519	the broccoli was fresh and the broccoli was cooked perfectly 4.629838943481445	1
+200099	the portions are huge 4.493582248687744	1
+158507	i went to this theater last night 3.2962846755981445	1
+218151	the drinks were good 4.508545398712158	1
+231191	the food is always fresh and delicious 4.271371364593506	1
+24529	their deli is amazing 4.0	1
+193251	the setup is a bit odd 4.240723609924316	0
+7595	it tasted like a pizza 4.336084365844727	1
+493735	i 'm not a fan of this place . 2.4568023681640625	1
+349869	we went out of our way to go and try this place because i saw 1.0	0
+376223	the flavor was great 4.324400424957275	1
+326489	and available on your choice of three fresh baked rolls 5.0	1
+476583	i was looking for a quick bite to eat 4.249111175537109	0
+471031	the parking is a little tricky 4.386176586151123	0
+94273	wow these were both incredible with refried beans and real delicious mexican rice 5.0	1
+61541	but it would be a while before the server would take our order bc they 2.0	1
+304809	the fusion of the flavors - amazing 5.0	1
+6919	i 've been here twice and have been here several times and have been disappointed 3.8688862323760986	0
+345177	there is of course salt and pepper on the table and i remember being surprised 5.0	1
+453701	i ordered the lemon pancakes 4.0	1
+394619	i had the gluten free bread 3.0785787105560303	1
+247281	green curry with chicken and a deep fried whole fish 4.0	0
+265871	my favorite was the <unk> <unk> <unk> 3.7607250213623047	1
+201867	the spice level is a little on the spicy side 4.012632846832275	0
+113997	the pizza is good 4.0	1
+186909	cozy place with good service and nice ambiance 4.0	1
+28245	well priced sushi for what you get 4.0	1
+217679	the soup was good 3.159681797027588	0
+350361	the beef carpaccio was the best 3.0	0
+198587	they have a good variety of fresh ingredients 3.7609105110168457	1
+449327	i was able to get a table right away 3.710584878921509	1
+462383	the wings are good 1.9905831813812256	0
+329555	i ordered a small pepperoni pizza with a side of marinara 3.661708116531372	1
+502197	every last one of them that i was on 1.0	0
+126129	roasted <unk> delish 4.0	1
+281503	the beef brisket was good 3.793924570083618	1
+462385	the teacher was good though 3.0	1
+320533	i loved the old decor and atmosphere 3.0	0
+86991	it 's waaay better than the one in the city 4.2492876052856445	1
+101865	you can tell the difference in every bite . 5.0	1
+400893	started with the bang bang brussels and the little crazy fries 4.0	1
+55271	this is a great place to stop by for a quick snack or snack . 3.974486827850342	1
+340769	lots of open parking but after 10am forget it 5.0	1
+310673	amazing variety of common items at excellent prices 5.0	1
+283707	the decor is nice 4.35197114944458	1
+213353	but if you are looking for a good sushi place to impress a date 3.0	0
+401245	with boiling water to quickly cook the different pastas 3.0	1
+476077	the service is typically good but if its a busy night bring your patience 5.0	0
+458261	certainly not some low end poorly decorated chinese buffet and certainly not mandarin 4.0	1
+218299	we were seated right away and our table was ready 3.7837440967559814	1
+489059	the bread is fresh and delicious 3.325288772583008	0
+274381	the one dish that really stood out for me was a butter steamed sole 4.0	1
+164503	the texture was perfect 3.7213551998138428	1
+249487	i 've been to a few times since i 've been to a few times 3.405660629272461	1
+180361	it should be served with skin only 3.0	1
+136151	the fried artichokes were delicious 3.743781089782715	1
+389629	found two different items on were the blueberries 2.0	0
+324495	the tables were dirty and the tables were dirty 3.178953170776367	0
+173209	i got poached eggs with hash browns and crab meat 3.0	1
+492755	good food . 3.6264750957489014	1
+439441	and even have vegan options on most of them 5.0	1
+441175	the food is good 3.4659688472747803	0
+271135	the sushi is good 3.8945841789245605	1
+434233	still the best burger i have eaten in toronto 4.0	1
+312421	as long as you come here knowing it is a cheap diner and not expecting 4.0	1
+382811	the bun was soft and the bun was soft and soft 3.123749017715454	0
