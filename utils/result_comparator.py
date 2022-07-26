@@ -52,7 +52,7 @@ with open(path_1, "r") as f:
     no_tf = f.readlines()
 
 for line in lines:
-    print(f"{line} {''.join(no_tf[line - 1: line + 2])}")
+    print(f"{int(no_tf[line - 1][-4])}")
 
 # with open(path_2, "r") as f:
 #     tf = f.readlines()
