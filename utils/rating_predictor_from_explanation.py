@@ -100,7 +100,7 @@ def cross_validate(X, y, model_type, metrics, epoch_num=50):
 def init_model(model_type):
     model = model_type().to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), weight_decay=L2_REGULARIZATION_WEIGHT)
-    loss_function = torch.nn.MSELoss() if model_type == RatingPredictionModel else torch.nn.CrossEntropyLoss(weight=torch.Tensor([1.75, 1.]))
+    loss_function = torch.nn.MSELoss() if model_type == RatingPredictionModel else torch.nn.CrossEntropyLoss(weight=CLASS_WEIGHTS)
     return model, optimizer, loss_function.to(DEVICE)
 
 
@@ -124,7 +124,7 @@ def train(model, optimizer, loss_function, X: torch.Tensor, y: torch.Tensor, n_e
 
 def evaluate(model, metrics, X, y):
     y_pred = infer(model, X)
-    if metrics == CLASSIFICATION_METRICS:
+    if set(metrics) == set(CLASSIFICATION_METRICS):
         y_pred = torch.argmax(y_pred, dim=1)
     # print(y_pred)
     return [metric(y.cpu(), y_pred.cpu()) for metric in metrics]
@@ -146,13 +146,26 @@ def infer(model, X):
         prediction = model(X).squeeze()
     return prediction
 
-
-DATASET = "AmazonMovies"
-BATCH_SIZE = 10
-DEVICE = torch.device("cuda")
-INFERENCE_BATCH_SIZE = 64
-L2_REGULARIZATION_WEIGHT = 0.15
 PRETRAINED_MODEL_NAME = "bert-base-uncased"
+DEVICE = torch.device("cuda")
+BATCH_SIZE = 10
+INFERENCE_BATCH_SIZE = 64
+
+# DATASET = "AmazonMovies"
+# CLASS_WEIGHTS = torch.Tensor([1.8, 1.])
+# L2_REGULARIZATION_WEIGHT = 0.05
+# EPOCH_NUM = 100
+
+DATASET = "TripAdvisor"
+CLASS_WEIGHTS = torch.Tensor([2., 1.])
+L2_REGULARIZATION_WEIGHT = 0.1
+EPOCH_NUM = 150
+
+# DATASET = "Yelp"
+# CLASS_WEIGHTS = torch.Tensor([2.5, 1.])
+# L2_REGULARIZATION_WEIGHT = 0.05
+# EPOCH_NUM = 150
+
 
 SENTENCE_FILE_PATH = f"../models/{DATASET}/gt explanations sample.txt"
 GROUND_TRUTH_RATING_FILE_PATH = f"../models/{DATASET}/gt sample labels.txt"
@@ -160,13 +173,12 @@ HUMAN_RATING_FILE_PATH = f"../models/{DATASET}/gt sample human labels.txt"
 CONSISTENCY_FILE_PATH = f"../models/{DATASET}/gt sample consistency labels.txt"
 ALL_DATA_FILE_PATH = f"../models/{DATASET}/consistency_manual_labeled_dataset.txt"
 PETER_OUTPUT_PATH = f"../models/{DATASET}/generated{DATASET.lower()}.txt"
-IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generated{DATASET.lower()}.txt"
+IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generatedratinginputtrip.txt"
 CONSISTENCY_MODEL_DIR = f"consistency_models/{DATASET}/100_samples"
 LOAD_CONSISTENCY_MODEL = True
-EPOCH_NUM = 100
 
-CLASSIFICATION_METRICS = {accuracy_score, recall_score, f1_score, precision_score}
-REGRESSION_METRICS = {torch.nn.MSELoss, torch.nn.L1Loss}
+CLASSIFICATION_METRICS = [accuracy_score, recall_score, f1_score, precision_score]
+REGRESSION_METRICS = [torch.nn.MSELoss, torch.nn.L1Loss]
 
 PROMPT_TEXTS = {
     1: "An example of a very negative review is ",
@@ -199,6 +211,7 @@ PROMPT_TEXTS = {
 
 
 def main():
+    print(f"Dataset: {DATASET}")
     # sentences, ratings, consistency_labels = load_consistency_data(ALL_DATA_FILE_PATH)
     sentences, ratings = load_data(SENTENCE_FILE_PATH, GROUND_TRUTH_RATING_FILE_PATH)
     test_sentences = ["the brunch here is worth a return trip", "i expect more than a tiny cup of juice",
@@ -219,32 +232,34 @@ def main():
 
     results_basic, results_improved = [], []
     start = time.time()
-    for i in range(1):
+    for i in range(10):
         model, optimizer, loss_function = init_model(ConsistencyPredictionModel)
 
         # cross_validate(model_input_features, consistency_labels, ConsistencyPredictionModel, CLASSIFICATION_METRICS, EPOCH_NUM)
 
         checkpoint_path = f"{CONSISTENCY_MODEL_DIR}/model{i + 1}.pt"
         if LOAD_CONSISTENCY_MODEL:
-            print("loaded")
+            print(f"{i + 1} loaded")
             model.load_state_dict(torch.load(checkpoint_path))
         else:
-            print("trained")
+            print(f"{i + 1} trained")
             train(model, optimizer, loss_function, model_input_features, consistency_labels, EPOCH_NUM)
             torch.save(model.state_dict(), checkpoint_path)
         model.eval()
         # print(infer(model, get_bert_sentence_representation(test_sentences, bert, tokenizer)))
         print(evaluate(model, CLASSIFICATION_METRICS, model_input_features, consistency_labels))
         results_basic.append(evaluate_on_full_dataset(model, bert, tokenizer, PETER_OUTPUT_PATH))
-        results_improved.append(evaluate_on_full_dataset(model, bert, tokenizer, IMPROVED_PETER_OUTPUT_PATH, 0))
-    print(time.time() - start)
-    print("Basic PETER consistency:", results_basic, np.mean(results_basic))
-    print("Improved PETER consistency:", results_improved, np.mean(results_improved))
+        results_improved.append(evaluate_on_full_dataset(model, bert, tokenizer, IMPROVED_PETER_OUTPUT_PATH))
+    print(f"Elapsed time: {time.time() - start}")
+    print("Basic PETER consistency:", [round(i * 100, 2) for i in results_basic], np.mean(results_basic))
+    print("Rating input consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
 
 
 if __name__ == "__main__":
     main()
 
 # Amazon Movies 100 epochs, 0.15L2, 1.75;1 weights
+
+# TripAdvisor 150 epochs, 0.1L2, 2.;1 weights
 
 # Yelp, TripAdvisor 150 epochs, 0.05L2, 2.5;1 weights
