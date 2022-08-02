@@ -1,4 +1,5 @@
 import time
+from pprint import pprint
 from typing import Tuple, List
 
 import numpy as np
@@ -62,11 +63,12 @@ def load_consistency_data(path: str) -> Tuple[List[str], torch.Tensor, torch.Ten
     return sentences, torch.Tensor(ratings), torch.Tensor(labels).type(torch.LongTensor)
 
 
-def load_peter_output(path: str, mod=2) -> List[str]:
+def load_peter_output(path: str, mod=2) -> Tuple[List[str], List[int]]:
     with open(path, "r") as f:
         lines = f.readlines()
     split_lines = [line.split(" ") for i, line in enumerate(lines) if i % 4 == mod]
-    return [PROMPT_TEXTS[round(float(line[-1]))] + '"' + " ".join(line[:-1]) + '"' for line in split_lines]
+    predicted_ratings = [round(float(line[-1])) for line in split_lines]
+    return [PROMPT_TEXTS[rating] + '"' + " ".join(line[:-1]) + '"' for rating, line in zip(predicted_ratings, split_lines)], predicted_ratings
 
 
 def read_file_with_data(path: str) -> List[str]:
@@ -131,14 +133,27 @@ def evaluate(model, metrics, X, y):
 
 
 def evaluate_on_full_dataset(model, bert, tokenizer, data_path, mod=2):
-    test_sentences = load_peter_output(data_path, mod)
+    test_sentences, predicted_ratings = load_peter_output(data_path, mod)
     number_of_consistent_samples = 0
+    consistency_predictions = []
     for i in range(0, len(test_sentences), INFERENCE_BATCH_SIZE):
         inference_results = infer(model, get_bert_sentence_representation(test_sentences[i:i + INFERENCE_BATCH_SIZE], bert, tokenizer))
-        predicted_labels = torch.argmax(inference_results, dim=1)
-        number_of_consistent_samples += torch.sum(predicted_labels)
+        predicted_consistencies = torch.argmax(inference_results, dim=1)
+        number_of_consistent_samples += torch.sum(predicted_consistencies)
+        consistency_predictions += list(predicted_consistencies.cpu().numpy())
         # print("Predictions:", infer(model, get_bert_sentence_representation(test_sentences[i:i + INFERENCE_BATCH_SIZE], bert, tokenizer)))
-    return number_of_consistent_samples.item() / len(test_sentences)
+    print(compute_per_class_consistencies(consistency_predictions, predicted_ratings))
+    return number_of_consistent_samples.item() / len(test_sentences), consistency_predictions
+
+
+def compute_per_class_consistencies(consistency_predictions: list, predicted_ratings: list) -> dict:
+    results_per_class = dict.fromkeys(range(1, 6))
+    for key in results_per_class:
+        boolean_mask = np.array(predicted_ratings) == key
+        results_per_class[key] = round(100 * np.sum(np.array(consistency_predictions)[boolean_mask]) / np.sum(boolean_mask), 2)
+    for i in results_per_class.values():
+        print(i)
+    return results_per_class
 
 
 def infer(model, X):
@@ -156,15 +171,15 @@ INFERENCE_BATCH_SIZE = 64
 # L2_REGULARIZATION_WEIGHT = 0.05
 # EPOCH_NUM = 100
 
-DATASET = "TripAdvisor"
-CLASS_WEIGHTS = torch.Tensor([2., 1.])
-L2_REGULARIZATION_WEIGHT = 0.1
-EPOCH_NUM = 150
-
-# DATASET = "Yelp"
-# CLASS_WEIGHTS = torch.Tensor([2.5, 1.])
-# L2_REGULARIZATION_WEIGHT = 0.05
+# DATASET = "TripAdvisor"
+# CLASS_WEIGHTS = torch.Tensor([2., 1.])
+# L2_REGULARIZATION_WEIGHT = 0.1
 # EPOCH_NUM = 150
+
+DATASET = "Yelp"
+CLASS_WEIGHTS = torch.Tensor([2.5, 1.])
+L2_REGULARIZATION_WEIGHT = 0.05
+EPOCH_NUM = 150
 
 
 SENTENCE_FILE_PATH = f"../models/{DATASET}/gt explanations sample.txt"
@@ -173,7 +188,7 @@ HUMAN_RATING_FILE_PATH = f"../models/{DATASET}/gt sample human labels.txt"
 CONSISTENCY_FILE_PATH = f"../models/{DATASET}/gt sample consistency labels.txt"
 ALL_DATA_FILE_PATH = f"../models/{DATASET}/consistency_manual_labeled_dataset.txt"
 PETER_OUTPUT_PATH = f"../models/{DATASET}/generated{DATASET.lower()}.txt"
-IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generatedratinginputtrip.txt"
+IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generated_rating_input_yelp.txt"
 CONSISTENCY_MODEL_DIR = f"consistency_models/{DATASET}/100_samples"
 LOAD_CONSISTENCY_MODEL = True
 
@@ -221,7 +236,7 @@ def main():
     sentences = [PROMPT_TEXTS[int(rating.item())] + '"' + sentence + '"' for sentence, rating in zip(sentences, ratings)]
     # print(sentences)
     test_sentences = [PROMPT_TEXTS[rating] + '"' + sentence + '"' for sentence, rating in zip(test_sentences, [4, 2, 5, 3, 1, 5, 3, 1])]
-    # test_sentences = load_peter_output(PETER_OUTPUT_PATH)
+    # test_sentences, _ = load_peter_output(PETER_OUTPUT_PATH)
     # print(test_sentences)
     consistency_labels = torch.Tensor([int(is_consistent) for is_consistent in read_file_with_data(CONSISTENCY_FILE_PATH)]).type(torch.LongTensor).to(DEVICE)
 
@@ -247,9 +262,11 @@ def main():
             torch.save(model.state_dict(), checkpoint_path)
         model.eval()
         # print(infer(model, get_bert_sentence_representation(test_sentences, bert, tokenizer)))
-        print(evaluate(model, CLASSIFICATION_METRICS, model_input_features, consistency_labels))
-        results_basic.append(evaluate_on_full_dataset(model, bert, tokenizer, PETER_OUTPUT_PATH))
-        results_improved.append(evaluate_on_full_dataset(model, bert, tokenizer, IMPROVED_PETER_OUTPUT_PATH))
+        # print(evaluate(model, CLASSIFICATION_METRICS, model_input_features, consistency_labels))
+        results, predictions = evaluate_on_full_dataset(model, bert, tokenizer, PETER_OUTPUT_PATH)
+        results_basic.append(results)
+        results_modification, predictions_modification = evaluate_on_full_dataset(model, bert, tokenizer, IMPROVED_PETER_OUTPUT_PATH)
+        results_improved.append(results_modification)
     print(f"Elapsed time: {time.time() - start}")
     print("Basic PETER consistency:", [round(i * 100, 2) for i in results_basic], np.mean(results_basic))
     print("Rating input consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
