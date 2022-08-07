@@ -80,7 +80,7 @@ device = torch.device('cuda' if args.cuda else 'cpu')
 
 if not os.path.exists(args.checkpoint):
     os.makedirs(args.checkpoint)
-model_path = os.path.join(args.checkpoint, 'model.pt')
+model_path = os.path.join(args.checkpoint, 'model_default.pt')
 prediction_path = os.path.join(args.checkpoint, args.outf)
 
 ###############################################################################
