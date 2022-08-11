@@ -5,6 +5,9 @@ import heapq
 import random
 import pickle
 import datetime
+
+from matplotlib import pyplot as plt
+
 from rouge import rouge
 from bleu import compute_bleu
 
@@ -294,3 +297,11 @@ def ids2tokens(ids, word2idx, idx2word):
             break
         tokens.append(idx2word[i])
     return tokens
+
+
+def visualize_attention_batch(att_batch: torch.Tensor):
+    print(att_batch.shape)
+    for i in att_batch[:16]:
+        plt.imshow(i, cmap='hot')
+        plt.colorbar()
+        plt.show()
