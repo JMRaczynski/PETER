@@ -1,0 +1,50 @@
+----------------------------------------ARGUMENTS----------------------------------------
+data_path                                ../datasets/Yelp/reviews.pickle
+index_dir                                ../datasets/Yelp/1
+emsize                                   512
+nhead                                    2
+nhid                                     2048
+nlayers                                  2
+dropout                                  0.2
+lr                                       1.0
+clip                                     1.0
+epochs                                   100
+batch_size                               128
+seed                                     1111
+cuda                                     True
+log_interval                             200
+checkpoint                               ./models/Yelp/
+outf                                     generated_yelp_default.txt
+vocab_size                               20000
+endure_times                             5
+rating_reg                               0.1
+context_reg                              1.0
+text_reg                                 1.0
+peter_mask                               True
+use_feature                              True
+words                                    15
+----------------------------------------ARGUMENTS----------------------------------------
+[2022-08-08 19:11:42.909241]: Loading data
+=========================================================================================
+[2022-08-08 19:12:23.034597]: context ppl 407.2088 | text ppl 26.4204 | rating loss 1.0231 on test | End of training
+[2022-08-08 19:12:23.034658]: Generating text
+[2022-08-08 19:16:28.583778]: RMSE  1.0115
+[2022-08-08 19:16:28.597880]: MAE  0.7869
+[2022-08-08 19:16:30.611620]: BLEU-1 20.7077
+[2022-08-08 19:16:36.712286]: BLEU-4  3.7542
+[2022-08-08 19:17:57.310823]: USR  0.1952 | USN   25246
+[2022-08-08 19:49:22.094404]: DIV  0.9428
+[2022-08-08 19:49:24.380835]: FCR  0.3128
+[2022-08-08 19:49:24.404708]: FMR  0.8724
+[2022-08-08 19:49:30.402157]: rouge_1/f_score 27.6424
+[2022-08-08 19:49:30.402224]: rouge_1/r_score 26.4503
+[2022-08-08 19:49:30.402231]: rouge_1/p_score 34.1705
+[2022-08-08 19:49:30.402237]: rouge_2/f_score  7.9667
+[2022-08-08 19:49:30.402243]: rouge_2/r_score  7.9174
+[2022-08-08 19:49:30.402248]: rouge_2/p_score 10.1237
+[2022-08-08 19:49:30.402253]: rouge_l/f_score 21.4097
+[2022-08-08 19:49:30.402258]: rouge_l/r_score 23.4700
+[2022-08-08 19:49:30.402264]: rouge_l/p_score 29.5638
+[2022-08-08 19:49:30.615288]: Generated text saved to (./models/Yelp/generated_yelp_default.txt)
+
+Process finished with exit code 0
