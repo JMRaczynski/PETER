@@ -219,7 +219,6 @@ class PETER(nn.Module):
         self.pos_encoder = PositionalEncoding(emsize, dropout)  # emsize: word embedding size
         encoder_layers = TransformerEncoderLayer(emsize, nhead, nhid, dropout)  # nhid: dim_feedforward, one basic layer, including multi-head attention and FFN
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)  # loop over the one above
-        self.rating_embeddings = nn.Embedding(5, emsize)
         self.user_embeddings = nn.Embedding(nuser, emsize)
         self.item_embeddings = nn.Embedding(nitem, emsize)
         self.word_embeddings = nn.Embedding(ntoken, emsize)
@@ -235,15 +234,14 @@ class PETER(nn.Module):
         else:
             self.attn_mask = generate_square_subsequent_mask(src_len + tgt_len)
 
+        self.initrange = 0.1
         self.init_weights()
 
     def init_weights(self):
-        initrange = 0.1
-        self.user_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.item_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.word_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.rating_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.hidden2token.weight.data.uniform_(-initrange, initrange)
+        self.user_embeddings.weight.data.uniform_(-self.initrange, self.initrange)
+        self.item_embeddings.weight.data.uniform_(-self.initrange, self.initrange)
+        self.word_embeddings.weight.data.uniform_(-self.initrange, self.initrange)
+        self.hidden2token.weight.data.uniform_(-self.initrange, self.initrange)
         self.hidden2token.bias.data.zero_()
 
     def predict_context(self, hidden):
@@ -265,11 +263,12 @@ class PETER(nn.Module):
         log_word_prob = func.log_softmax(word_prob, dim=-1)
         return log_word_prob
 
-    def forward(self, user, item, text, gt_rating, seq_prediction=True, context_prediction=True, rating_prediction=True):
+    def forward(self, user, item, text, gt_rating=None, seq_prediction=True, context_prediction=True, rating_prediction=True):
         '''
         :param user: (batch_size,), torch.int64
         :param item: (batch_size,), torch.int64
         :param text: (total_len - ui_len, batch_size), torch.int64
+        :param gt_rating: added for Peter++ compatibility - ground truth rating for teacher forcing, torch.int64
         :param seq_prediction: bool
         :param context_prediction: bool
         :param rating_prediction: bool
@@ -280,30 +279,24 @@ class PETER(nn.Module):
         '''
         device = user.device
         batch_size = user.size(0)
-        total_len = self.ui_len + 1 + text.size(0)  # deal with generation when total_len != src_len + tgt_len
+        total_len = self.ui_len + text.size(0)  # deal with generation when total_len != src_len + tgt_len
         # see nn.MultiheadAttention for attn_mask and key_padding_mask
         attn_mask = self.attn_mask[:total_len, :total_len].to(device)  # (total_len, total_len)
-        left = torch.zeros(batch_size, self.ui_len + 1).bool().to(device)  # (batch_size, ui_len)
+        left = torch.zeros(batch_size, self.ui_len).bool().to(device)  # (batch_size, ui_len)
         right = text.t() == self.pad_idx  # replace pad_idx with True and others with False, (batch_size, total_len - ui_len)
         key_padding_mask = torch.cat([left, right], 1)  # (batch_size, total_len)
 
         u_src = self.user_embeddings(user.unsqueeze(0))  # (1, batch_size, emsize)
         i_src = self.item_embeddings(item.unsqueeze(0))  # (1, batch_size, emsize)
         w_src = self.word_embeddings(text)  # (total_len - ui_len, batch_size, emsize)
-        dummy_rating_src = torch.zeros((1, batch_size, self.emsize)).float().to(device)
-        src = torch.cat([u_src, i_src, dummy_rating_src, w_src], 0)  # (total_len, batch_size, emsize)
+        src = torch.cat([u_src, i_src, w_src], 0)  # (total_len, batch_size, emsize)
         src = src * math.sqrt(self.emsize)
         src = self.pos_encoder(src)
         hidden, attns = self.transformer_encoder(src, attn_mask, key_padding_mask)  # (total_len, batch_size, emsize) vs. (nlayers, batch_size, total_len_tgt, total_len_src)
-        rating = self.predict_rating(hidden)  # (batch_size,)
-        if self.training:
-            rating_embedded = self.rating_embeddings((gt_rating - 1).long().to(device).unsqueeze(0))
+        if rating_prediction:
+            rating = self.predict_rating(hidden)  # (batch_size,)
         else:
-            rating_embedded = self.rating_embeddings(torch.clamp(rating - 1, 0, 4).round().long().to(device).unsqueeze(0))
-        new_src = torch.cat([u_src, i_src, rating_embedded, w_src], 0)
-        new_src = new_src * math.sqrt(self.emsize)
-        new_src = self.pos_encoder(new_src)
-        hidden, attns = self.transformer_encoder(new_src, attn_mask, key_padding_mask)
+            rating = None
         if context_prediction:
             log_context_dis = self.predict_context(hidden)  # (batch_size, ntoken)
         else:

@@ -6,6 +6,7 @@ import torch
 import argparse
 import torch.nn as nn
 from module import PETER
+from peterplusplus import PETERPlusPlus
 from utils import rouge_score, bleu_score, DataLoader, Batchify, now_time, ids2tokens, unique_sentence_percent, \
     root_mean_square_error, mean_absolute_error, feature_detect, feature_matching_ratio, feature_coverage_ratio, feature_diversity
 
@@ -57,6 +58,8 @@ parser.add_argument('--peter_mask', action='store_true',
                     help='True to use peter mask; Otherwise left-to-right mask')
 parser.add_argument('--use_feature', action='store_true',
                     help='False: no feature; True: use the feature')
+parser.add_argument('--use_rating_input', action='store_true',
+                    help='False: no rating input; True: use the predicted rating as input for generating explanation')
 parser.add_argument('--words', type=int, default=15,
                     help='number of words to generate for each sample')
 args = parser.parse_args()
@@ -130,16 +133,22 @@ test_data = Batchify(corpus.test, word2idx, args.words, args.batch_size)
 ###############################################################################
 # Build the model
 ###############################################################################
+src_len = 2
 if args.use_feature:
-    src_len = 3 + train_data.feature.size(1)  # [u, i, f]
-else:
-    src_len = 3  # [u, i]
+    src_len += train_data.feature.size(1)
+if args.use_rating_input:
+    src_len += 1  # [u, i, r, f]
 tgt_len = args.words + 1  # added <bos> or <eos>
 ntokens = len(corpus.word_dict)
 nuser = len(corpus.user_dict)
 nitem = len(corpus.item_dict)
 pad_idx = word2idx['<pad>']
-model = PETER(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+if args.use_rating_input:
+    model = PETERPlusPlus(5, args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize,
+                          args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+else:
+    model = PETER(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead,
+                  args.nhid, args.nlayers, args.dropout).to(device)
 text_criterion = nn.NLLLoss(ignore_index=pad_idx)  # ignore the padding when computing loss
 rating_criterion = nn.MSELoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
