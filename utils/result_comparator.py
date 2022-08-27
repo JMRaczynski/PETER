@@ -70,3 +70,36 @@ for line in gt_lines:
 
 # for line_no in gt_lines:
 #     print(round(float(no_tf[line_no - 1][-4:-1])))
+
+
+
+###################################################################### OTHER - copied from cleaned up main.py
+
+
+# def get_count(key):
+#     l = []
+#     for x in (corpus.train, corpus.valid, corpus.test):
+#         l.append([a[key] for a in x])
+#         print(len(l[-1]), len(set(l[-1])))
+#     print(len(set(l[0]).intersection(set(l[1]))), len(set(l[1]).intersection(set(l[2]))), len(set(l[0]).intersection(set(l[2]))))
+#
+#
+# print("ITEM")
+# get_count("item")
+# print("USER")
+# get_count("user")
+# exit(0)
+
+# l = torch.zeros((3, 5))
+# for i, x in enumerate((corpus.train, corpus.valid, corpus.test)):
+#     ratings = torch.Tensor([example["rating"] for example in x]).type(torch.IntTensor)
+#     l[i] = ratings.bincount()[1:]
+# print(*l.sum(dim=0).tolist())
+# print(test_data.next_batch())
+# print([ids2tokens(ids[1:], word2idx, idx2word) for ids in test_data.seq.tolist()][12:16])
+# exit(0)
+
+# batch = train_data.next_batch()
+# print(batch[3].shape)
+# for explanation in batch[3]:
+#     print([idx2word[idx] for idx in explanation])

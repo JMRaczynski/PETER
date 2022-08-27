@@ -83,7 +83,10 @@ device = torch.device('cuda' if args.cuda else 'cpu')
 
 if not os.path.exists(args.checkpoint):
     os.makedirs(args.checkpoint)
-model_path = os.path.join(args.checkpoint, 'model_rating_input.pt')
+model_file_name = 'model'
+if args.use_rating_input:
+    model_file_name += 'plusplus'
+model_path = os.path.join(args.checkpoint, model_file_name + '.pt')
 prediction_path = os.path.join(args.checkpoint, args.outf)
 
 ###############################################################################
@@ -98,37 +101,6 @@ feature_set = corpus.feature_set
 train_data = Batchify(corpus.train, word2idx, args.words, args.batch_size, shuffle=True)
 val_data = Batchify(corpus.valid, word2idx, args.words, args.batch_size)
 test_data = Batchify(corpus.test, word2idx, args.words, args.batch_size)
-
-
-# def get_count(key):
-#     l = []
-#     for x in (corpus.train, corpus.valid, corpus.test):
-#         l.append([a[key] for a in x])
-#         print(len(l[-1]), len(set(l[-1])))
-#     print(len(set(l[0]).intersection(set(l[1]))), len(set(l[1]).intersection(set(l[2]))), len(set(l[0]).intersection(set(l[2]))))
-#
-#
-# print("ITEM")
-# get_count("item")
-# print("USER")
-# get_count("user")
-# exit(0)
-
-# l = torch.zeros((3, 5))
-# for i, x in enumerate((corpus.train, corpus.valid, corpus.test)):
-#     ratings = torch.Tensor([example["rating"] for example in x]).type(torch.IntTensor)
-#     l[i] = ratings.bincount()[1:]
-# print(*l.sum(dim=0).tolist())
-# print(test_data.next_batch())
-# print([ids2tokens(ids[1:], word2idx, idx2word) for ids in test_data.seq.tolist()][12:16])
-# exit(0)
-
-# batch = train_data.next_batch()
-# print(batch[3].shape)
-# for explanation in batch[3]:
-#     print([idx2word[idx] for idx in explanation])
-
-
 
 ###############################################################################
 # Build the model
