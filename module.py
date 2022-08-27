@@ -234,14 +234,14 @@ class PETER(nn.Module):
         else:
             self.attn_mask = generate_square_subsequent_mask(src_len + tgt_len)
 
+        self.initrange = 0.1
         self.init_weights()
 
     def init_weights(self):
-        initrange = 0.1
-        self.user_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.item_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.word_embeddings.weight.data.uniform_(-initrange, initrange)
-        self.hidden2token.weight.data.uniform_(-initrange, initrange)
+        self.user_embeddings.weight.data.uniform_(-self.initrange, self.initrange)
+        self.item_embeddings.weight.data.uniform_(-self.initrange, self.initrange)
+        self.word_embeddings.weight.data.uniform_(-self.initrange, self.initrange)
+        self.hidden2token.weight.data.uniform_(-self.initrange, self.initrange)
         self.hidden2token.bias.data.zero_()
 
     def predict_context(self, hidden):
@@ -263,11 +263,12 @@ class PETER(nn.Module):
         log_word_prob = func.log_softmax(word_prob, dim=-1)
         return log_word_prob
 
-    def forward(self, user, item, text, seq_prediction=True, context_prediction=True, rating_prediction=True):
+    def forward(self, user, item, text, gt_rating=None, seq_prediction=True, context_prediction=True, rating_prediction=True):
         '''
         :param user: (batch_size,), torch.int64
         :param item: (batch_size,), torch.int64
         :param text: (total_len - ui_len, batch_size), torch.int64
+        :param gt_rating: added for Peter++ compatibility - ground truth rating for teacher forcing, torch.int64
         :param seq_prediction: bool
         :param context_prediction: bool
         :param rating_prediction: bool
