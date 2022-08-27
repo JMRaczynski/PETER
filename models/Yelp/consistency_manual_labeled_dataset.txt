@@ -256,3 +256,71 @@
 434233	still the best burger i have eaten in toronto 4.0	1
 312421	as long as you come here knowing it is a cheap diner and not expecting 4.0	1
 382811	the bun was soft and the bun was soft and soft 3.123749017715454	0
+395521	the bartenders ask what your name is and then they use it whenever they talk 4.0	1
+8877	this is a busy airport so allow yourself plenty of time 4.0	0
+138825	daily savings listed on wall when you first walk in 5.0	1
+478567	the portions are huge 4.3274407386779785	1
+243055	the atmosphere is nice 2.7074503898620605	0
+201489	the new hot spot to be in mississauga after taking over on the curve 3.0	1
+296517	only suck thing is that nobody 's cell phone worked there and forget calling your 4.0	1
+455591	the prices are very reasonable 4.399302959442139	1
+83221	food was really horrible it was n't the best experience i definitely would n't come 1.0	1
+104859	the food is good 4.416163444519043	1
+240661	while slightly crispy on the outside 5.0	1
+272821	this terrible <unk> station is located directly across from the red rock casino on w 4.0	0
+381079	there are plenty of restaurants to choose from 3.757211208343506	1
+205001	the portions are very large and we took food home 5.0	1
+226191	the lattes are delicious 4.2920989990234375	1
+360881	finally the food itself was okay the chips and salsa were good and the nachos 4.0	1
+353519	the food tasted great 3.5839767456054688	1
+267755	this place is amazing ! 4.518712043762207	1
+46209	they 're more than generous with the smoked salmon and cream cheese 5.0	1
+269323	the frozen yogurt is a bit too sweet 3.06331467628479	1
+48251	they have a great selections of organic food 4.417606830596924	1
+170715	the prices are reasonable 3.726599931716919	1
+181855	the drinks are good 4.469763278961182	1
+244495	the decor is very nice 4.049269199371338	1
+229981	west towne is much nicer on the inside than the exterior 3.0	1
+4407	the tortillas were fresh and the tortillas were delicious 3.5717833042144775	1
+398205	happy hour is almost all day on thursdays 4.0	1
+512757	the oysters taste great 5.0	1
+27995	i love the happy hour 4.708735942840576	1
+431031	the dining room was clean and the dining room was clean 3.740682601928711	1
+430955	the front desk is always friendly and helpful 4.229183197021484	1
+198813	green chilis 5.0	0
+445299	it 's located inside the casino 4.416482925415039	0
+374623	the bread was good 3.0245563983917236	0
+434115	i was told the employee that she was n't working on the phone 2.209806442260742	0
+292769	let me try several flavors 3.0	1
+470931	the batter is light and crispy 3.474604845046997	0
+255277	it 's also very loud which is cool if you 're standing on the sidewalk 3.0	1
+403757	interior and decor is modern and inviting 4.0	1
+477395	i love the pizza here . 4.369009971618652	1
+473249	not in the best part of town but after i drove by it a couple 4.0	0
+299423	i love the outdoor area and the weather is nice . 4.133995056152344	1
+233353	more sweet than salty the noodles were n't breaking apart 5.0	1
+404347	the dish was very good 4.072326183319092	1
+458435	the dish was delicious 3.6983799934387207	1
+188163	the decor is very nice 4.662219524383545	1
+443589	we did not have a good experience here and it is safe to say that 3.0	0
+188503	the cucumbers were fresh and the cucumbers were fresh 2.907553195953369	0
+89375	the coleslaw was good 3.6049997806549072	1
+180979	the pulled pork is a must 3.692996025085449	1
+10403	i got the frozen hot chocolate 3.2693796157836914	1
+165287	i have been to this dealership several times and have been to this dealership several 3.472827672958374	1
+495709	the broccolini was the first green thing i ate in vegas and i found it 4.0	0
+140875	i have been here several times and have always had great dining experience 4.455626487731934	1
+357323	the spa is beautiful and spacious 4.324381351470947	1
+405391	i ordered the medium spicy 4.059610843658447	1
+420033	the pizza <unk> a is always way too big and way too delicious ! 5.0	1
+169757	put together a really nice milk cream sugar <unk> package 5.0	1
+455797	this place has a classic dark wood bar that really reminds you of the old 4.0	1
+355021	its like a chicken sandwich with gravy on top in between two halves of a 5.0	1
+30135	service was great . 3.907870292663574	1
+309703	i 'm not a big fan of this store 3.0729782581329346	1
+301539	they have pitchers of beer and pitchers of beer 3.1861703395843506	1
+516279	the edamame is delicious 4.523324012756348	1
+115043	the decor is very nice 3.188096761703491	0
+129097	definately made all the difference in my latest visit here 4.0	0
+235615	the falafel was good 3.123723030090332	0
+332827	they have a lot of specials on the menu 3.1793506145477295	0

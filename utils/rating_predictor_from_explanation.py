@@ -1,5 +1,4 @@
 import time
-from pprint import pprint
 from typing import Tuple, List
 
 import numpy as np
@@ -269,7 +268,7 @@ def main():
         results_improved.append(results_modification)
     print(f"Elapsed time: {time.time() - start}")
     print("Basic PETER consistency:", [round(i * 100, 2) for i in results_basic], np.mean(results_basic))
-    print("Rating input consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
+    print("Improved PETER consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
 
 
 if __name__ == "__main__":

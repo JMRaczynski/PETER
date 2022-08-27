@@ -249,8 +249,8 @@ class PETER(nn.Module):
         log_context_dis = func.log_softmax(context_prob, dim=-1)
         return log_context_dis
 
-    def predict_rating(self, hidden):
-        rating = self.recommender(hidden[0])  # (batch_size,)
+    def predict_rating(self, hidden) -> Tuple[torch.Tensor]:
+        rating = self.recommender(hidden[0]),  # (batch_size,)
         return rating
 
     def predict_seq(self, hidden):
@@ -294,9 +294,9 @@ class PETER(nn.Module):
         src = self.pos_encoder(src)
         hidden, attns = self.transformer_encoder(src, attn_mask, key_padding_mask)  # (total_len, batch_size, emsize) vs. (nlayers, batch_size, total_len_tgt, total_len_src)
         if rating_prediction:
-            rating = self.predict_rating(hidden)  # (batch_size,)
+            ratings = self.predict_rating(hidden)  # (batch_size,)
         else:
-            rating = None
+            ratings = None
         if context_prediction:
             log_context_dis = self.predict_context(hidden)  # (batch_size, ntoken)
         else:
@@ -305,4 +305,4 @@ class PETER(nn.Module):
             log_word_prob = self.predict_seq(hidden)  # (tgt_len, batch_size, ntoken)
         else:
             log_word_prob = self.generate_token(hidden)  # (batch_size, ntoken)
-        return log_word_prob, log_context_dis, rating, attns
+        return log_word_prob, log_context_dis, ratings, attns
