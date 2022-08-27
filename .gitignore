@@ -2,5 +2,7 @@
 __pycache__
 datasets/
 *.zip
+*.log
 *.pt
 venv/
+.run/

@@ -1,0 +1,14 @@
+TripAdvisor:
+
+- ucięte (2227, 8219, 20177, 22110, 23641, 23963, 28137, 33451, 44309, 46602, 48634, 51285, 60353)
+- opinia zamiast wyjaśnienia ("we enjoyed...") (4029)
+- występowanie tokenów UNK (6337, 40031, 47694, 48634, 76813)
+- niespójne z oceną (8217, 8325, 23641, 23963, 25379, 51285, 60353)
+- trudno zrozumieć ich sens (9319, 46602, 70538, 99773)
+- brak kluczowej części (20177, 30793, 39106, 40031, 44309, 46602)
+- opowieść przygód użytkownika (21687, 22110, 26421, 39661, 48634, 55863)
+- brak uzasadnienia (45493, 51222)
+- frazy odwołujące się do kontekstu, którego nie mamy (55755)
+- opis faktów, nie ocena obiektu (92873, 103153)
+- dziwne opinie (104675)
+- może zły feature? (117909)

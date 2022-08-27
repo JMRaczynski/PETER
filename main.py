@@ -1,9 +1,12 @@
 import os
 import math
+from typing import Tuple
+
 import torch
 import argparse
 import torch.nn as nn
 from module import PETER
+from peterplusplus import PETERPlusPlus
 from peterr import PETERR
 from utils import rouge_score, bleu_score, DataLoader, Batchify, now_time, ids2tokens, unique_sentence_percent, \
     root_mean_square_error, mean_absolute_error, feature_detect, feature_matching_ratio, feature_coverage_ratio, feature_diversity
@@ -54,12 +57,15 @@ parser.add_argument('--text_reg', type=float, default=1.0,
                     help='regularization on text generation task')
 parser.add_argument('--peter_mask', action='store_true',
                     help='True to use peter mask; Otherwise left-to-right mask')
-parser.add_argument('--additional_recommender', action='store_true',
-                    help='True to use additional recommender; Otherwise single is used')
 parser.add_argument('--use_feature', action='store_true',
                     help='False: no feature; True: use the feature')
 parser.add_argument('--words', type=int, default=15,
                     help='number of words to generate for each sample')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--use_rating_input', action='store_true',
+                    help='False: no rating input; True: use the predicted rating as input for generating explanation')
+group.add_argument('--additional_recommender', action='store_true',
+                    help='True to use additional recommender; Otherwise single is used')
 args = parser.parse_args()
 
 if args.data_path is None:
@@ -81,7 +87,12 @@ device = torch.device('cuda' if args.cuda else 'cpu')
 
 if not os.path.exists(args.checkpoint):
     os.makedirs(args.checkpoint)
-model_path = os.path.join(args.checkpoint, 'model_two_recommenders.pt')
+model_file_name = 'peter'
+if args.use_rating_input:
+    model_file_name += 'plusplus'
+if args.additional_recommender:
+    model_file_name += 'r'
+model_path = os.path.join(args.checkpoint, model_file_name + '.pt')
 prediction_path = os.path.join(args.checkpoint, args.outf)
 
 ###############################################################################
@@ -97,53 +108,27 @@ train_data = Batchify(corpus.train, word2idx, args.words, args.batch_size, shuff
 val_data = Batchify(corpus.valid, word2idx, args.words, args.batch_size)
 test_data = Batchify(corpus.test, word2idx, args.words, args.batch_size)
 
-
-# def get_count(key):
-#     l = []
-#     for x in (corpus.train, corpus.valid, corpus.test):
-#         l.append([a[key] for a in x])
-#         print(len(l[-1]), len(set(l[-1])))
-#     print(len(set(l[0]).intersection(set(l[1]))), len(set(l[1]).intersection(set(l[2]))), len(set(l[0]).intersection(set(l[2]))))
-#
-#
-# print("ITEM")
-# get_count("item")
-# print("USER")
-# get_count("user")
-# exit(0)
-
-# l = torch.zeros((3, 5))
-# for i, x in enumerate((corpus.train, corpus.valid, corpus.test)):
-#     ratings = torch.Tensor([example["rating"] for example in x]).type(torch.IntTensor)
-#     l[i] = ratings.bincount()[1:]
-# print(*l.sum(dim=0).tolist())
-# print(test_data.next_batch())
-# print([ids2tokens(ids[1:], word2idx, idx2word) for ids in test_data.seq.tolist()][12:16])
-# exit(0)
-
-# batch = train_data.next_batch()
-# print(batch[3].shape)
-# for explanation in batch[3]:
-#     print([idx2word[idx] for idx in explanation])
-
-
-
 ###############################################################################
 # Build the model
 ###############################################################################
+src_len = 2
 if args.use_feature:
-    src_len = 2 + train_data.feature.size(1)  # [u, i, f]
-else:
-    src_len = 2  # [u, i]
+    src_len += train_data.feature.size(1)
+if args.use_rating_input:
+    src_len += 1  # [u, i, r, f]
 tgt_len = args.words + 1  # added <bos> or <eos>
 ntokens = len(corpus.word_dict)
 nuser = len(corpus.user_dict)
 nitem = len(corpus.item_dict)
 pad_idx = word2idx['<pad>']
-if args.additional_recommender:
+if args.use_rating_input:
+    model = PETERPlusPlus(5, args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize,
+                          args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+elif args.additional_recommender:
     model = PETERR(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
 else:
-    model = PETER(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+    model = PETER(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead,
+                  args.nhid, args.nlayers, args.dropout).to(device)
 text_criterion = nn.NLLLoss(ignore_index=pad_idx)  # ignore the padding when computing loss
 rating_criterion = nn.MSELoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
@@ -185,7 +170,7 @@ def train(data):
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         optimizer.zero_grad()
-        log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+        log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text, rating)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
         context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
         c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
         r_loss = rating_criterion(ratings_p[0], rating)
@@ -238,7 +223,7 @@ def evaluate(data):
                 text = torch.cat([feature, seq[:-1]], 0)  # (src_len + tgt_len - 2, batch_size)
             else:
                 text = seq[:-1]  # (src_len + tgt_len - 2, batch_size)
-            log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text, None)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
             context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
             c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
             r_loss = rating_criterion(ratings_p[0], rating)
@@ -254,6 +239,38 @@ def evaluate(data):
             if data.step == data.total_step:
                 break
     return context_loss / total_sample, text_loss / total_sample, rating_loss / total_sample
+
+
+def generate_greedy(model, model_input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
+    user, item, text = model_input
+    for idx in range(args.words):  # produce a word at each step
+        log_word_prob, _, _, _ = model(user, item, text, None, False, False, False)  # (batch_size, ntoken)
+        word_prob = log_word_prob.exp()  # (batch_size, ntoken)
+        word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
+        text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
+    return text
+
+
+def generate_with_beam_search(model, model_input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], beam_size=5):  # all words represented as indices
+    user, item, text = model_input
+    repeated_user, repeated_item = user.repeat_interleave(beam_size), item.repeat_interleave(beam_size)
+    batch_size = text.shape[-1]
+    log_word_prob, _, _, _ = model(user, item, text, None, False, False, False)
+    beam_log_probas, top_candidate_words = torch.topk(log_word_prob, beam_size, dim=1)
+    sentences = torch.cat([text.repeat_interleave(beam_size, dim=1), top_candidate_words.reshape(1, -1)], 0)
+    beam_log_probas = beam_log_probas.unsqueeze(-1)
+    for _ in range(args.words - 1):
+        log_word_prob, _, _, _ = model(repeated_user, repeated_item, sentences, None, False, False, False)  # (batch_size * beam_size, ntoken)
+        top_candidate_log_probas, top_candidate_words = torch.topk(log_word_prob, beam_size, dim=1, sorted=False)  # (batch_size * beam_size, beam_size)
+        beam_log_probas = beam_log_probas + top_candidate_log_probas.reshape(batch_size, beam_size, beam_size)
+        beam_log_probas, probas_idx = torch.topk(beam_log_probas.reshape(batch_size, -1), beam_size, dim=1, sorted=False)
+        beam_log_probas = beam_log_probas.unsqueeze(-1)
+        new_words = torch.gather(top_candidate_words.reshape(batch_size, -1), 1, probas_idx)
+        sentences_idx = (probas_idx / beam_size).long()  # calculating sentence idx basing on candidate word idx
+        sentences = sentences.T.reshape(batch_size, beam_size, -1)[torch.arange(0, batch_size).reshape(-1, 1), sentences_idx, :]
+        sentences = torch.cat([sentences.reshape(batch_size * beam_size, -1).T, new_words.reshape(1, -1)], 0)
+    best_sentences_idx = beam_log_probas.squeeze().argmax(1)
+    return sentences.T.reshape(batch_size, beam_size, -1)[range(batch_size), best_sentences_idx, :].T
 
 
 def generate(data):
@@ -274,18 +291,10 @@ def generate(data):
             else:
                 text = bos  # (src_len - 1, batch_size)
             start_idx = text.size(0)
-            for idx in range(args.words):
-                # produce a word at each step
-                if idx == 0:
-                    log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
-                    rating_predict.extend(ratings_p[0].tolist())
-                    context = predict(log_context_dis, topk=args.words)  # (batch_size, words)
-                    context_predict.extend(context.tolist())
-                else:
-                    log_word_prob, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
-                word_prob = log_word_prob.exp()  # (batch_size, ntoken)
-                word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
-                text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
+            log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text, None, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            rating_predict += ratings_p[0].tolist()
+            context_predict += predict(log_context_dis, topk=args.words).tolist()  # (batch_size, words)
+            text = generate_greedy(model, (user, item, text))
             ids = text[start_idx:].t().tolist()  # (batch_size, seq_len)
             idss_predict.extend(ids)
 

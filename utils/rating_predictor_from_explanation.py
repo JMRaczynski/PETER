@@ -186,8 +186,8 @@ GROUND_TRUTH_RATING_FILE_PATH = f"../models/{DATASET}/gt sample labels.txt"
 HUMAN_RATING_FILE_PATH = f"../models/{DATASET}/gt sample human labels.txt"
 CONSISTENCY_FILE_PATH = f"../models/{DATASET}/gt sample consistency labels.txt"
 ALL_DATA_FILE_PATH = f"../models/{DATASET}/consistency_manual_labeled_dataset.txt"
-PETER_OUTPUT_PATH = f"../models/{DATASET}/generatedyelp.txt"
-IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generated_two_recommenders_yelp.txt"
+PETER_OUTPUT_PATH = f"../models/{DATASET}/generated{DATASET.lower()}.txt"
+IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generated_rating_input_yelp.txt"
 CONSISTENCY_MODEL_DIR = f"consistency_models/{DATASET}/100_samples"
 LOAD_CONSISTENCY_MODEL = True
 
@@ -253,7 +253,7 @@ def main():
 
         checkpoint_path = f"{CONSISTENCY_MODEL_DIR}/model{i + 1}.pt"
         if LOAD_CONSISTENCY_MODEL:
-            print(f"\n{i + 1} loaded")
+            print(f"{i + 1} loaded")
             model.load_state_dict(torch.load(checkpoint_path))
         else:
             print(f"{i + 1} trained")
@@ -267,8 +267,8 @@ def main():
         results_modification, predictions_modification = evaluate_on_full_dataset(model, bert, tokenizer, IMPROVED_PETER_OUTPUT_PATH)
         results_improved.append(results_modification)
     print(f"Elapsed time: {time.time() - start}")
-    print("GT consistency:", [round(i * 100, 2) for i in results_basic], np.mean(results_basic))
-    print("Two recommenders consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
+    print("Basic PETER consistency:", [round(i * 100, 2) for i in results_basic], np.mean(results_basic))
+    print("Improved PETER consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
 
 
 if __name__ == "__main__":
