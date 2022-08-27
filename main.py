@@ -4,6 +4,7 @@ import torch
 import argparse
 import torch.nn as nn
 from module import PETER
+from peterr import PETERR
 from utils import rouge_score, bleu_score, DataLoader, Batchify, now_time, ids2tokens, unique_sentence_percent, \
     root_mean_square_error, mean_absolute_error, feature_detect, feature_matching_ratio, feature_coverage_ratio, feature_diversity
 
@@ -53,6 +54,8 @@ parser.add_argument('--text_reg', type=float, default=1.0,
                     help='regularization on text generation task')
 parser.add_argument('--peter_mask', action='store_true',
                     help='True to use peter mask; Otherwise left-to-right mask')
+parser.add_argument('--additional_recommender', action='store_true',
+                    help='True to use additional recommender; Otherwise single is used')
 parser.add_argument('--use_feature', action='store_true',
                     help='False: no feature; True: use the feature')
 parser.add_argument('--words', type=int, default=15,
@@ -137,7 +140,10 @@ ntokens = len(corpus.word_dict)
 nuser = len(corpus.user_dict)
 nitem = len(corpus.item_dict)
 pad_idx = word2idx['<pad>']
-model = PETER(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+if args.additional_recommender:
+    model = PETERR(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+else:
+    model = PETER(args.peter_mask, src_len, tgt_len, pad_idx, nuser, nitem, ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
 text_criterion = nn.NLLLoss(ignore_index=pad_idx)  # ignore the padding when computing loss
 rating_criterion = nn.MSELoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
@@ -179,10 +185,12 @@ def train(data):
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         optimizer.zero_grad()
-        log_word_prob, log_context_dis, rating_p, rating_p_from_explanation, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+        log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
         context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
         c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
-        r_loss = rating_criterion(rating_p, rating) + rating_criterion(rating_p_from_explanation, rating_p)
+        r_loss = rating_criterion(ratings_p[0], rating)
+        if args.additional_recommender:
+            r_loss += rating_criterion(ratings_p[1], ratings_p[0])
         t_loss = text_criterion(log_word_prob.view(-1, ntokens), seq[1:].reshape((-1,)))
         loss = args.text_reg * t_loss + args.context_reg * c_loss + args.rating_reg * r_loss
         loss.backward()
@@ -230,10 +238,12 @@ def evaluate(data):
                 text = torch.cat([feature, seq[:-1]], 0)  # (src_len + tgt_len - 2, batch_size)
             else:
                 text = seq[:-1]  # (src_len + tgt_len - 2, batch_size)
-            log_word_prob, log_context_dis, rating_p, rating_p_from_explanation, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+            log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text)  # (tgt_len, batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
             context_dis = log_context_dis.unsqueeze(0).repeat((tgt_len - 1, 1, 1))  # (batch_size, ntoken) -> (tgt_len - 1, batch_size, ntoken)
             c_loss = text_criterion(context_dis.view(-1, ntokens), seq[1:-1].reshape((-1,)))
-            r_loss = rating_criterion(rating_p, rating) + rating_criterion(rating_p_from_explanation, rating_p)
+            r_loss = rating_criterion(ratings_p[0], rating)
+            if args.additional_recommender:
+                r_loss += rating_criterion(ratings_p[1], ratings_p[0])
             t_loss = text_criterion(log_word_prob.view(-1, ntokens), seq[1:].reshape((-1,)))
 
             context_loss += batch_size * c_loss.item()
@@ -267,12 +277,12 @@ def generate(data):
             for idx in range(args.words):
                 # produce a word at each step
                 if idx == 0:
-                    log_word_prob, log_context_dis, rating_p, rating_p_from_explanation, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
-                    rating_predict.extend(rating_p.tolist())
+                    log_word_prob, log_context_dis, ratings_p, _ = model(user, item, text, False)  # (batch_size, ntoken) vs. (batch_size, ntoken) vs. (batch_size,)
+                    rating_predict.extend(ratings_p[0].tolist())
                     context = predict(log_context_dis, topk=args.words)  # (batch_size, words)
                     context_predict.extend(context.tolist())
                 else:
-                    log_word_prob, _, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
+                    log_word_prob, _, _, _ = model(user, item, text, False, False, False)  # (batch_size, ntoken)
                 word_prob = log_word_prob.exp()  # (batch_size, ntoken)
                 word_idx = torch.argmax(word_prob, dim=1)  # (batch_size,), pick the one with the largest probability
                 text = torch.cat([text, word_idx.unsqueeze(0)], 0)  # (len++, batch_size)
