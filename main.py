@@ -85,14 +85,19 @@ if torch.cuda.is_available():
         print(now_time() + 'WARNING: You have a CUDA device, so you should probably run with --cuda')
 device = torch.device('cuda' if args.cuda else 'cpu')
 
+args.checkpoint += args.index_dir.split('/')[-1]
 if not os.path.exists(args.checkpoint):
     os.makedirs(args.checkpoint)
-model_file_name = 'peter'
+model_file_name = 'PETER'
 if args.use_rating_input:
-    model_file_name += 'plusplus'
+    model_file_name += 'plus'
 if args.additional_recommender:
-    model_file_name += 'r'
+    model_file_name += 'R'
+if args.use_feature:
+    model_file_name += 'plus'
 model_path = os.path.join(args.checkpoint, model_file_name + '.pt')
+
+args.outf = f'{args.outf.split(".")[0]}_{model_file_name}.{args.outf.split(".")[1]}'
 prediction_path = os.path.join(args.checkpoint, args.outf)
 
 ###############################################################################

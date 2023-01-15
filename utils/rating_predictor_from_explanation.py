@@ -1,3 +1,4 @@
+import argparse
 import time
 from typing import Tuple, List
 
@@ -53,7 +54,8 @@ def load_consistency_data(path: str) -> Tuple[List[str], torch.Tensor, torch.Ten
     lines = read_file_with_data(path)
     split_lines = [line.split("\t") for line in lines]
     samples = [(sentence.split(" "), int(label)) for _, sentence, label in split_lines]
-    samples = [(" ".join(sentence_with_rating[:-1]), round(float(sentence_with_rating[-1])), label) for sentence_with_rating, label in samples]
+    samples = [(" ".join(sentence_with_rating[:-1]), round(float(sentence_with_rating[-1])), label)
+               for sentence_with_rating, label in samples]
     sentences, ratings, labels = [], [], []
     for sentence, rating, consistency_label in samples:
         sentences.append(sentence)
@@ -67,7 +69,12 @@ def load_peter_output(path: str, mod=2) -> Tuple[List[str], List[int]]:
         lines = f.readlines()
     split_lines = [line.split(" ") for i, line in enumerate(lines) if i % 4 == mod]
     predicted_ratings = [round(float(line[-1])) for line in split_lines]
-    return [PROMPT_TEXTS[rating] + '"' + " ".join(line[:-1]) + '"' for rating, line in zip(predicted_ratings, split_lines)], predicted_ratings
+    return [combine_rating_with_explanation(rating, " ".join(line[:-1]))
+            for rating, line in zip(predicted_ratings, split_lines)], predicted_ratings
+
+
+def combine_rating_with_explanation(rating: int, explanation: str) -> str:
+    return PROMPT_TEXTS[rating] + '"' + explanation + '"'
 
 
 def read_file_with_data(path: str) -> List[str]:
@@ -141,8 +148,16 @@ def evaluate_on_full_dataset(model, bert, tokenizer, data_path, mod=2):
         number_of_consistent_samples += torch.sum(predicted_consistencies)
         consistency_predictions += list(predicted_consistencies.cpu().numpy())
         # print("Predictions:", infer(model, get_bert_sentence_representation(test_sentences[i:i + INFERENCE_BATCH_SIZE], bert, tokenizer)))
-    print(compute_per_class_consistencies(consistency_predictions, predicted_ratings))
-    return number_of_consistent_samples.item() / len(test_sentences), consistency_predictions
+    per_class_scores = compute_per_class_consistencies(consistency_predictions, predicted_ratings)
+    print(f'Scores per predicted rating: {per_class_scores}')
+    return construct_result_np_array(per_class_scores, 100 * number_of_consistent_samples.item() / len(test_sentences))
+
+
+def construct_result_np_array(per_class_results: dict, full_result: float):
+    result_list = [0] * 5
+    for rating, score in per_class_results.items():
+        result_list[rating - 1] = score
+    return np.array(result_list + [full_result])
 
 
 def compute_per_class_consistencies(consistency_predictions: list, predicted_ratings: list) -> dict:
@@ -150,8 +165,6 @@ def compute_per_class_consistencies(consistency_predictions: list, predicted_rat
     for key in results_per_class:
         boolean_mask = np.array(predicted_ratings) == key
         results_per_class[key] = round(100 * np.sum(np.array(consistency_predictions)[boolean_mask]) / np.sum(boolean_mask), 2)
-    for i in results_per_class.values():
-        print(i)
     return results_per_class
 
 
@@ -160,39 +173,62 @@ def infer(model, X):
         prediction = model(X).squeeze()
     return prediction
 
+
+def evaluation_model_sanity_check(model, test_sentences, bert, tokenizer):
+    predictions = torch.argmax(infer(model, get_bert_sentence_representation(test_sentences, bert, tokenizer)), dim=1)
+    padding_size = max(len(sentence) for sentence in test_sentences)  # for pretty print :)
+    for i, sentence in enumerate(test_sentences):
+        print(f'{sentence.ljust(padding_size)}\tPredicted consistency: {predictions[i]}'
+              f'\tExpected consistency: {EXPECTED_CONSISTENCIES[i]}')
+
+
+################################## GLOBAL PARAMETERS DEFINITIONS ###############################
+
+
+parser = argparse.ArgumentParser(description='Explanation coherence automatic evaluator for PETER')
+parser.add_argument('--dataset', type=str, default=None,
+                    help='dataset name', choices=['AmazonMovies', 'TripAdvisor', 'Yelp'])
+parser.add_argument('--split_number', type=int, default=1,
+                    help='dataset split number', choices=[1, 2, 3, 4, 5])
+args = parser.parse_args()
+
 PRETRAINED_MODEL_NAME = "bert-base-uncased"
 DEVICE = torch.device("cuda")
 BATCH_SIZE = 10
 INFERENCE_BATCH_SIZE = 64
 
-# DATASET = "AmazonMovies"
-# CLASS_WEIGHTS = torch.Tensor([1.8, 1.])
-# L2_REGULARIZATION_WEIGHT = 0.05
-# EPOCH_NUM = 100
+DATASET = args.dataset
+SPLIT = args.split_number
 
-# DATASET = "TripAdvisor"
-# CLASS_WEIGHTS = torch.Tensor([2., 1.])
-# L2_REGULARIZATION_WEIGHT = 0.1
-# EPOCH_NUM = 150
-
-DATASET = "Yelp"
-CLASS_WEIGHTS = torch.Tensor([2.5, 1.])
-L2_REGULARIZATION_WEIGHT = 0.05
-EPOCH_NUM = 150
+if DATASET == "TripAdvisor":
+    CLASS_WEIGHTS = torch.Tensor([2., 1.])
+    L2_REGULARIZATION_WEIGHT = 0.1
+    EPOCH_NUM = 150
+elif DATASET == "Yelp":
+    CLASS_WEIGHTS = torch.Tensor([2.5, 1.])
+    L2_REGULARIZATION_WEIGHT = 0.05
+    EPOCH_NUM = 150
+elif DATASET == "AmazonMovies":
+    CLASS_WEIGHTS = torch.Tensor([1.8, 1.])
+    L2_REGULARIZATION_WEIGHT = 0.05
+    EPOCH_NUM = 100
 
 
 SENTENCE_FILE_PATH = f"../models/{DATASET}/gt explanations sample.txt"
 GROUND_TRUTH_RATING_FILE_PATH = f"../models/{DATASET}/gt sample labels.txt"
-HUMAN_RATING_FILE_PATH = f"../models/{DATASET}/gt sample human labels.txt"
 CONSISTENCY_FILE_PATH = f"../models/{DATASET}/gt sample consistency labels.txt"
-ALL_DATA_FILE_PATH = f"../models/{DATASET}/consistency_manual_labeled_dataset.txt"
-PETER_OUTPUT_PATH = f"../models/{DATASET}/generated{DATASET.lower()}.txt"
-IMPROVED_PETER_OUTPUT_PATH = f"../models/{DATASET}/generated_rating_input_yelp.txt"
+# ALL_DATA_FILE_PATH = f"../models/{DATASET}/consistency_manual_labeled_dataset.txt"
+
+PETER_OUTPUT_BASE_PATH = f"../models/{DATASET}/{SPLIT}/"
+
+EVALUATED_PETERS = ['PETERplus', 'PETERRplus']
+
 CONSISTENCY_MODEL_DIR = f"consistency_models/{DATASET}/100_samples"
 LOAD_CONSISTENCY_MODEL = True
 
 CLASSIFICATION_METRICS = [accuracy_score, recall_score, f1_score, precision_score]
-REGRESSION_METRICS = [torch.nn.MSELoss, torch.nn.L1Loss]
+
+NUMBER_OF_EVALUATION_MODELS = 10
 
 PROMPT_TEXTS = {
     1: "An example of a very negative review is ",
@@ -202,73 +238,62 @@ PROMPT_TEXTS = {
     5: "An example of a very positive review is "
 }
 
+SANITY_CHECK_SENTENCES = ["the brunch here is worth a return trip", "i expect more than a tiny cup of juice",
+                          "this place has consistent food quality", "i have mixed feelings about this place",
+                          "i got two free tickets and i still regret going",
+                          "terrible service and rooms", "average hotel",
+                          "fantastic, great, the best i've ever visited and friendly service"]
+SANITY_CHECK_RATINGS = [4, 2, 5, 3, 1, 5, 3, 1]
+EXPECTED_CONSISTENCIES = [1, 1, 1, 1, 1, 0, 1, 0]
 
-# def main():
-#     sentences, ratings = load_data(SENTENCE_FILE_PATH, RATING_FILE_PATH)
-#     # sentences, ratings, _ = load_consistency_data(ALL_DATA_FILE_PATH)
-#     test_sentences = ["the brunch here is worth a return trip", "i expect more than a tiny cup of juice",
-#                         "this place has consistent food quality", "i have mixed feelings about this place",
-#                         "i got two free tickets and i still regret going",
-#                         "absolutely bad and terrible, worst I have ever eaten", "pretty much average", "fantastic, great, the best i've ever visited"]
-#
-#     tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
-#     bert = BertModel.from_pretrained(PRETRAINED_MODEL_NAME)
-#
-#     model_input_features = get_bert_sentence_representation(sentences, bert, tokenizer)
-#
-#     model, optimizer, loss_function = init_model(RatingPredictionModel)
-#
-#     cross_validate(model_input_features, ratings, RatingPredictionModel, [loss_function, torch.nn.L1Loss()], 100)
-#
-#     train(model, optimizer, loss_function, model_input_features, ratings, 100)
-#     print("Predictions:", infer(model, get_bert_sentence_representation(test_sentences, bert, tokenizer)))
-
+######################### END OF GLOBAL PARAMETERS DEFINITIONS ################################
 
 def main():
-    print(f"Dataset: {DATASET}")
+    print(f"Dataset {DATASET} split {SPLIT}")
     # sentences, ratings, consistency_labels = load_consistency_data(ALL_DATA_FILE_PATH)
     sentences, ratings = load_data(SENTENCE_FILE_PATH, GROUND_TRUTH_RATING_FILE_PATH)
-    test_sentences = ["the brunch here is worth a return trip", "i expect more than a tiny cup of juice",
-                      "this place has consistent food quality", "i have mixed feelings about this place",
-                      "i got two free tickets and i still regret going",
-                      "terrible service and rooms", "average hotel", "fantastic, great, the best i've ever visited and friendly service"]
     sentences = [PROMPT_TEXTS[int(rating.item())] + '"' + sentence + '"' for sentence, rating in zip(sentences, ratings)]
-    # print(sentences)
-    test_sentences = [PROMPT_TEXTS[rating] + '"' + sentence + '"' for sentence, rating in zip(test_sentences, [4, 2, 5, 3, 1, 5, 3, 1])]
-    # test_sentences, _ = load_peter_output(PETER_OUTPUT_PATH)
-    # print(test_sentences)
     consistency_labels = torch.Tensor([int(is_consistent) for is_consistent in read_file_with_data(CONSISTENCY_FILE_PATH)]).type(torch.LongTensor).to(DEVICE)
+
+    test_sentences = [combine_rating_with_explanation(rating, sentence)
+                      for sentence, rating in zip(SANITY_CHECK_SENTENCES, SANITY_CHECK_RATINGS)]
 
     tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
     bert = BertModel.from_pretrained(PRETRAINED_MODEL_NAME).to(DEVICE)
 
     model_input_features = get_bert_sentence_representation(sentences, bert, tokenizer)
 
-    results_basic, results_improved = [], []
+    results = {peter_name: [] for peter_name in EVALUATED_PETERS}
     start = time.time()
-    for i in range(10):
+    for i in range(NUMBER_OF_EVALUATION_MODELS):
         model, optimizer, loss_function = init_model(ConsistencyPredictionModel)
 
         # cross_validate(model_input_features, consistency_labels, ConsistencyPredictionModel, CLASSIFICATION_METRICS, EPOCH_NUM)
 
         checkpoint_path = f"{CONSISTENCY_MODEL_DIR}/model{i + 1}.pt"
         if LOAD_CONSISTENCY_MODEL:
-            print(f"{i + 1} loaded")
+            print(f"Evaluation model number {i + 1} loaded\n")
             model.load_state_dict(torch.load(checkpoint_path))
         else:
-            print(f"{i + 1} trained")
+            print(f"Evaluation model number {i + 1} trained")
             train(model, optimizer, loss_function, model_input_features, consistency_labels, EPOCH_NUM)
             torch.save(model.state_dict(), checkpoint_path)
         model.eval()
-        # print(infer(model, get_bert_sentence_representation(test_sentences, bert, tokenizer)))
+
+        # evaluation_model_sanity_check(model, test_sentences, bert, tokenizer)
+
         # print(evaluate(model, CLASSIFICATION_METRICS, model_input_features, consistency_labels))
-        results, predictions = evaluate_on_full_dataset(model, bert, tokenizer, PETER_OUTPUT_PATH)
-        results_basic.append(results)
-        results_modification, predictions_modification = evaluate_on_full_dataset(model, bert, tokenizer, IMPROVED_PETER_OUTPUT_PATH)
-        results_improved.append(results_modification)
-    print(f"Elapsed time: {time.time() - start}")
-    print("Basic PETER consistency:", [round(i * 100, 2) for i in results_basic], np.mean(results_basic))
-    print("Improved PETER consistency:", [round(i * 100, 2) for i in results_improved], np.mean(results_improved))
+
+        for peter_type in EVALUATED_PETERS:
+            peter_output_path = f'{PETER_OUTPUT_BASE_PATH}generated_{DATASET.lower()}_{peter_type}.txt'
+            results[peter_type].append(evaluate_on_full_dataset(model, bert, tokenizer, peter_output_path))
+    for peter_type in EVALUATED_PETERS:
+        results_array = np.c_[tuple(results[peter_type])]
+        results_array_with_mean = np.c_[results_array, results_array.mean(axis=1)]
+        print(f'{peter_type} consistency:', results_array_with_mean)
+        np.savetxt(f'{PETER_OUTPUT_BASE_PATH}{peter_type}_coherence_automatic_eval_results.tsv',
+                   results_array_with_mean, fmt="%.2f", header=f'{DATASET} split {SPLIT} {peter_type}', delimiter='\t')
+    print(f"\nElapsed time: {time.time() - start} seconds")
 
 
 if __name__ == "__main__":
