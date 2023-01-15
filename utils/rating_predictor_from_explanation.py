@@ -44,24 +44,12 @@ def get_bert_sentence_representation(sentences: list, bert, tokenizer):
     return bert(**tokenizer(sentences, return_tensors="pt", padding=True).to(DEVICE)).pooler_output.detach()
 
 
-def load_data(sentence_path: str, rating_path: str) -> Tuple[List[str], torch.Tensor]:
-    sentences = read_file_with_data(sentence_path)
-    ratings = torch.Tensor([int(rating) for rating in read_file_with_data(rating_path)])
-    return sentences, ratings
-
-
-def load_consistency_data(path: str) -> Tuple[List[str], torch.Tensor, torch.Tensor]:
-    lines = read_file_with_data(path)
-    split_lines = [line.split("\t") for line in lines]
-    samples = [(sentence.split(" "), int(label)) for _, sentence, label in split_lines]
-    samples = [(" ".join(sentence_with_rating[:-1]), round(float(sentence_with_rating[-1])), label)
-               for sentence_with_rating, label in samples]
-    sentences, ratings, labels = [], [], []
-    for sentence, rating, consistency_label in samples:
-        sentences.append(sentence)
-        ratings.append(rating)
-        labels.append(consistency_label)
-    return sentences, torch.Tensor(ratings), torch.Tensor(labels).type(torch.LongTensor)
+def load_data_from_tsv(data_path: str) -> Tuple[List[str], np.ndarray, torch.Tensor]:
+    data = np.loadtxt(data_path, dtype=object, delimiter='\t')
+    sentences = list(data[:, 0])
+    ratings = data[:, 1].astype(np.int32)
+    consistency_labels = torch.Tensor(data[:, 2].astype(np.int32)).to(DEVICE)
+    return sentences, ratings, consistency_labels
 
 
 def load_peter_output(path: str, mod=2) -> Tuple[List[str], List[int]]:
@@ -75,12 +63,6 @@ def load_peter_output(path: str, mod=2) -> Tuple[List[str], List[int]]:
 
 def combine_rating_with_explanation(rating: int, explanation: str) -> str:
     return PROMPT_TEXTS[rating] + '"' + explanation + '"'
-
-
-def read_file_with_data(path: str) -> List[str]:
-    with open(path, "r") as f:
-        lines = f.readlines()
-    return lines
 
 
 def cross_validate(X, y, model_type, metrics, epoch_num=50):
@@ -190,6 +172,8 @@ parser.add_argument('--dataset', type=str, default=None,
                     help='dataset name', choices=['AmazonMovies', 'TripAdvisor', 'Yelp'])
 parser.add_argument('--split_number', type=int, default=1,
                     help='dataset split number', choices=[1, 2, 3, 4, 5])
+parser.add_argument('--training_set_size', type=int, default=100,
+                    help='size of training dataset, used to infer dataset filename')
 args = parser.parse_args()
 
 PRETRAINED_MODEL_NAME = "bert-base-uncased"
@@ -199,6 +183,7 @@ INFERENCE_BATCH_SIZE = 64
 
 DATASET = args.dataset
 SPLIT = args.split_number
+TRAINING_SET_SIZE = args.training_set_size
 
 if DATASET == "TripAdvisor":
     CLASS_WEIGHTS = torch.Tensor([2., 1.])
@@ -214,11 +199,7 @@ elif DATASET == "AmazonMovies":
     EPOCH_NUM = 100
 
 
-SENTENCE_FILE_PATH = f"../models/{DATASET}/gt explanations sample.txt"
-GROUND_TRUTH_RATING_FILE_PATH = f"../models/{DATASET}/gt sample labels.txt"
-CONSISTENCY_FILE_PATH = f"../models/{DATASET}/gt sample consistency labels.txt"
-# ALL_DATA_FILE_PATH = f"../models/{DATASET}/consistency_manual_labeled_dataset.txt"
-
+CONSISTENCY_DATASET_FILE_PATH = f"../models/{DATASET}/gt_explanations_with_labels_{TRAINING_SET_SIZE}samples.tsv"
 PETER_OUTPUT_BASE_PATH = f"../models/{DATASET}/{SPLIT}/"
 
 EVALUATED_PETERS = ['PETERplus', 'PETERRplus']
@@ -248,13 +229,12 @@ EXPECTED_CONSISTENCIES = [1, 1, 1, 1, 1, 0, 1, 0]
 
 ######################### END OF GLOBAL PARAMETERS DEFINITIONS ################################
 
+
 def main():
     print(f"Dataset {DATASET} split {SPLIT}")
-    # sentences, ratings, consistency_labels = load_consistency_data(ALL_DATA_FILE_PATH)
-    sentences, ratings = load_data(SENTENCE_FILE_PATH, GROUND_TRUTH_RATING_FILE_PATH)
-    sentences = [PROMPT_TEXTS[int(rating.item())] + '"' + sentence + '"' for sentence, rating in zip(sentences, ratings)]
-    consistency_labels = torch.Tensor([int(is_consistent) for is_consistent in read_file_with_data(CONSISTENCY_FILE_PATH)]).type(torch.LongTensor).to(DEVICE)
-
+    sentences, ratings, consistency_labels = load_data_from_tsv(CONSISTENCY_DATASET_FILE_PATH)
+    sentences = [combine_rating_with_explanation(rating, sentence)
+                      for sentence, rating in zip(sentences, ratings)]
     test_sentences = [combine_rating_with_explanation(rating, sentence)
                       for sentence, rating in zip(SANITY_CHECK_SENTENCES, SANITY_CHECK_RATINGS)]
 
