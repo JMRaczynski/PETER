@@ -48,7 +48,7 @@ def load_data_from_tsv(data_path: str) -> Tuple[List[str], np.ndarray, torch.Ten
     data = np.loadtxt(data_path, dtype=object, delimiter='\t')
     sentences = list(data[:, 0])
     ratings = data[:, 1].astype(np.int32)
-    consistency_labels = torch.Tensor(data[:, 2].astype(np.int32)).to(DEVICE)
+    consistency_labels = torch.LongTensor(data[:, 2].astype(np.int64)).to(DEVICE)
     return sentences, ratings, consistency_labels
 
 
@@ -241,7 +241,8 @@ def main():
     tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
     bert = BertModel.from_pretrained(PRETRAINED_MODEL_NAME).to(DEVICE)
 
-    model_input_features = get_bert_sentence_representation(sentences, bert, tokenizer)
+    model_input_features = torch.cat([get_bert_sentence_representation(sentences[i:i + 100], bert, tokenizer)
+                                      for i in range(0, len(sentences), 100)])
 
     results = {peter_name: [] for peter_name in EVALUATED_PETERS}
     start = time.time()
